@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: illiniguideserve-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-illiniguideserve}
+      POSTGRES_USER: ${POSTGRES_USER:-illiniguideserve}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-illiniguideserve}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-illiniguideserve} -d ${POSTGRES_DB:-illiniguideserve}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
