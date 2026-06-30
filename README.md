@@ -51,6 +51,7 @@ Start with the local MVP:
 | DB-aware mock RAG | Implemented | Keyword retrieval over course DB rows, with sample chunk fallback. |
 | `get_course_profile` tool | Implemented | Structured lookup from `courses` table. |
 | `get_gpa_stats` tool | Implemented | Structured lookup and aggregation from `gpa_stats` rows. |
+| `check_prerequisites` tool | Implemented | Course-ID prerequisite readiness check from official ECE prerequisite text. |
 | React frontend | Planned | Will start after backend skeleton and mocked APIs. |
 | Real RAG pipeline | Planned | pgvector retrieval, ingestion, embeddings, and fallback are not implemented yet. |
 | vLLM integration | Planned | Later Phase 1/2 serving work. |
@@ -108,7 +109,7 @@ cd backend
 .venv/bin/python -m uvicorn app.main:app --reload
 ```
 
-The backend currently returns mocked advising responses. Real database, RAG, tool routing, and LLM calls are planned.
+The backend currently returns mocked advising responses. Some database-backed services and tools are implemented, but real API-level tool routing, embedding RAG, and LLM calls are planned.
 
 ## Core Design Rule
 

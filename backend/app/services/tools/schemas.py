@@ -27,3 +27,12 @@ class GPAStats:
     course_id: str
     average_gpa: float | None
     instructor_stats: list[InstructorGPAStat]
+
+
+@dataclass(frozen=True)
+class PrerequisiteCheck:
+    target_course: str
+    completed_courses: list[str]
+    missing_prerequisites: list[str]
+    readiness: str
+    notes: list[str]

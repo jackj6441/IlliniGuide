@@ -71,10 +71,38 @@ Output:
 }
 ```
 
+### `check_prerequisites`
+
+Status: Implemented
+
+Purpose:
+
+Check whether the user's completed courses satisfy the parseable course-ID prerequisites for a target course. This is not a full official degree audit; non-course conditions such as senior standing are returned as notes or `unknown`.
+
+Input:
+
+```json
+{
+  "target_course": "ECE 391",
+  "completed_courses": ["ECE 220"]
+}
+```
+
+Output:
+
+```json
+{
+  "target_course": "ECE 391",
+  "completed_courses": ["ECE 220"],
+  "missing_prerequisites": [],
+  "readiness": "likely_ready",
+  "notes": ["All parseable course prerequisite groups are satisfied."]
+}
+```
+
 ## Planned
 
 - `search_course_docs`
-- `check_prerequisites`
 - `compare_courses`
 - `recommend_courses`
 - Manual tool router

@@ -37,6 +37,7 @@ This document tracks the architecture as it becomes implemented. It must disting
 - DB-aware mock RAG service with course ID normalization, keyword retrieval, citation formatting, and sample chunk fallback.
 - First structured course tool: `get_course_profile`.
 - Structured GPA stats tool: `get_gpa_stats`.
+- Structured prerequisite check tool: `check_prerequisites`.
 
 ## Planned
 
@@ -50,7 +51,7 @@ This document tracks the architecture as it becomes implemented. It must disting
 
 ## Current Boundary
 
-The current backend behavior is mocked. It validates request/response shapes and route structure, but it does not yet query PostgreSQL, retrieve embeddings, call vLLM, or run real tools.
+The current API behavior is still mocked. It validates request/response shapes and route structure. Some database-backed services and structured tools now exist, but API-level tool routing, embedding retrieval, and vLLM calls are not wired in yet.
 
 Future backend code should follow this boundary:
 
