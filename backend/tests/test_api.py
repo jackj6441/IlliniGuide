@@ -1,9 +1,16 @@
 from fastapi.testclient import TestClient
 
+from app.db.session import get_db_session
 from app.main import create_app
 
 
-client = TestClient(create_app())
+def override_db_session():
+    yield None
+
+
+app = create_app()
+app.dependency_overrides[get_db_session] = override_db_session
+client = TestClient(app)
 
 
 def test_health_returns_ok() -> None:

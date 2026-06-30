@@ -47,7 +47,7 @@ Start with the local MVP:
 | Database initialization | Implemented | `scripts.init_db` creates the pgvector extension and current tables. |
 | GPA ingestion | Implemented | Bounded WAF GPA CSV ingestion, default limit 20 ECE/CS rows. |
 | ECE prerequisite ingestion | Implemented | Bounded official ECE courses ingestion, default limit 20 rows. |
-| Mock RAG | Implemented | Keyword retrieval over sample course chunks with citations. |
+| DB-aware mock RAG | Implemented | Keyword retrieval over course DB rows, with sample chunk fallback. |
 | React frontend | Planned | Will start after backend skeleton and mocked APIs. |
 | Real RAG pipeline | Planned | pgvector retrieval, ingestion, embeddings, and fallback are not implemented yet. |
 | vLLM integration | Planned | Later Phase 1/2 serving work. |

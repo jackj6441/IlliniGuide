@@ -16,4 +16,4 @@ This file will become the demo script as features are implemented. Do not descri
 
 Status: Partial
 
-The repository skeleton exists. The backend API skeleton is implemented with mocked responses. `/api/chat` uses a keyword-based mock RAG retriever over sample course chunks. Frontend UI, real pgvector RAG, tool routing, vLLM integration, and metrics are not implemented yet.
+The repository skeleton exists. The backend API skeleton is implemented with mocked responses. `/api/chat` uses a DB-aware keyword retriever over ingested course rows, with sample chunk fallback. Frontend UI, real pgvector RAG, tool routing, vLLM integration, and metrics are not implemented yet.

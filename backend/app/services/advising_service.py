@@ -1,6 +1,8 @@
 from time import perf_counter
 from collections.abc import Sequence
 
+from sqlalchemy.orm import Session
+
 from app.schemas import (
     ChatRequest,
     ChatResponse,
@@ -13,14 +15,21 @@ from app.schemas import (
     RecommendResponse,
 )
 from app.services.rag.citation import citation_from_chunk
-from app.services.rag.retriever import RetrievedChunk, search_course_docs
+from app.services.rag.retriever import (
+    RetrievedChunk,
+    search_course_docs,
+    search_course_docs_from_db,
+)
 
 
-def build_mock_chat_response(request: ChatRequest) -> ChatResponse:
+def build_mock_chat_response(
+    request: ChatRequest,
+    db_session: Session | None = None,
+) -> ChatResponse:
     start = perf_counter()
-    retrieved_chunks = search_course_docs(request.message, top_k=5)
+    retrieved_chunks = _search_docs(request.message, db_session=db_session, top_k=5)
     citations = [citation_from_chunk(chunk) for chunk in retrieved_chunks]
-    used_tools = ["mock_intent_detector", "mock_keyword_retriever"]
+    used_tools = ["mock_intent_detector", _retriever_name(db_session)]
     debug_trace = None
 
     if request.debug:
@@ -56,9 +65,17 @@ def build_mock_chat_response(request: ChatRequest) -> ChatResponse:
     )
 
 
-def build_mock_compare_response(request: CompareRequest) -> CompareResponse:
+def build_mock_compare_response(
+    request: CompareRequest,
+    db_session: Session | None = None,
+) -> CompareResponse:
     query = f"Compare {' '.join(request.course_ids)} {request.dimension or ''}".strip()
-    retrieved_chunks = search_course_docs(query, course_ids=request.course_ids, top_k=5)
+    retrieved_chunks = _search_docs(
+        query,
+        db_session=db_session,
+        course_ids=request.course_ids,
+        top_k=5,
+    )
     citations = [citation_from_chunk(chunk) for chunk in retrieved_chunks]
     courses = [
         CourseSummary(
@@ -125,3 +142,26 @@ def _build_grounded_mock_answer(retrieved_chunks: Sequence[RetrievedChunk]) -> s
         f"Based on the mock retrieved evidence for {course_ids}: {evidence_summary} "
         "TODO: replace this template with LLM evidence synthesis in Version 1."
     )
+
+
+def _search_docs(
+    query: str,
+    *,
+    db_session: Session | None,
+    course_ids: list[str] | None = None,
+    top_k: int = 5,
+) -> list[RetrievedChunk]:
+    if db_session is not None:
+        return search_course_docs_from_db(
+            db_session,
+            query,
+            course_ids=course_ids,
+            top_k=top_k,
+        )
+    return search_course_docs(query, course_ids=course_ids, top_k=top_k)
+
+
+def _retriever_name(db_session: Session | None) -> str:
+    if db_session is not None:
+        return "db_keyword_retriever"
+    return "mock_keyword_retriever"

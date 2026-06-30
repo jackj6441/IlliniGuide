@@ -2,7 +2,7 @@
 
 Status: Partial
 
-The current RAG implementation is a Phase 1 mock. It is intentionally simple and exists to unblock the API and future frontend before embeddings are ready.
+The current RAG implementation is a Phase 1 DB-aware mock. It is intentionally simple and exists to unblock the API and future frontend before embeddings are ready.
 
 ## Implemented
 
@@ -10,8 +10,10 @@ The current RAG implementation is a Phase 1 mock. It is intentionally simple and
 - Course ID normalization, such as `ece391` -> `ECE 391`.
 - Course ID extraction from user queries.
 - Keyword-overlap retrieval over sample chunks.
+- Keyword-overlap retrieval over `courses` database rows.
+- Fallback from database retrieval to sample chunks.
 - Citation formatting from retrieved chunks.
-- `/api/chat` now uses the mock retriever instead of a fully static response.
+- `/api/chat` and `/api/compare` now use DB-backed keyword retrieval when a database session is available.
 
 ## Planned
 
@@ -28,8 +30,10 @@ The current RAG implementation is a Phase 1 mock. It is intentionally simple and
 ```text
 user query
 -> extract course IDs
--> filter sample chunks by course ID when present
+-> query matching course rows from PostgreSQL
+-> build course profile chunks from title/prerequisites/source URL
 -> score chunks by keyword overlap
+-> fall back to sample chunks if no DB evidence is found
 -> return top-k chunks
 -> format citations
 -> template-based mock answer
@@ -37,7 +41,7 @@ user query
 
 ## Why This Is Mocked
 
-This is not real semantic retrieval yet. It is a small local substitute for pgvector retrieval so the project can exercise the same API shape early.
+This is not real semantic retrieval yet. It is a small local substitute for pgvector retrieval so the project can exercise the same API shape early while already using ingested structured course data.
 
 The important contract is:
 

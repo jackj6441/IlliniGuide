@@ -2,7 +2,7 @@ import pytest
 
 from app.services.rag.citation import citation_from_chunk
 from app.services.rag.normalize import extract_course_ids, normalize_course_id
-from app.services.rag.retriever import search_course_docs
+from app.services.rag.retriever import search_course_docs, search_course_docs_from_db
 
 
 @pytest.mark.parametrize(
@@ -53,3 +53,40 @@ def test_citation_from_chunk_preserves_source_metadata() -> None:
     assert citation.source_name == "Mock Course Dataset"
     assert citation.source_url
     assert citation.snippet
+
+
+def test_search_course_docs_from_db_builds_course_profile_chunks() -> None:
+    class FakeScalars:
+        def all(self):
+            return [
+                type(
+                    "Course",
+                    (),
+                    {
+                        "course_id": "ECE 210",
+                        "title": "Analog Signal Processing",
+                        "description": None,
+                        "prerequisites": (
+                            "Credit in ECE 110 Credit in PHYS 212 "
+                            "Credit or concurrent registration in MATH 285 or MATH 286"
+                        ),
+                        "career_tags": None,
+                        "source_url": "https://ece.illinois.edu/academics/courses",
+                    },
+                )()
+            ]
+
+    class FakeSession:
+        def scalars(self, statement):
+            return FakeScalars()
+
+    chunks = search_course_docs_from_db(
+        FakeSession(),
+        "What are prerequisites for ECE 210?",
+        top_k=3,
+    )
+
+    assert len(chunks) == 1
+    assert chunks[0].course_id == "ECE 210"
+    assert chunks[0].source_url == "https://ece.illinois.edu/academics/courses"
+    assert "Prerequisites: Credit in ECE 110" in chunks[0].chunk_text
