@@ -38,6 +38,7 @@ This document tracks the architecture as it becomes implemented. It must disting
 - First structured course tool: `get_course_profile`.
 - Structured GPA stats tool: `get_gpa_stats`.
 - Structured prerequisite check tool: `check_prerequisites`.
+- Structured course comparison tool: `compare_courses`.
 
 ## Planned
 

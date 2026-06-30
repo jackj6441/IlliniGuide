@@ -36,3 +36,23 @@ class PrerequisiteCheck:
     missing_prerequisites: list[str]
     readiness: str
     notes: list[str]
+
+
+@dataclass(frozen=True)
+class CourseComparisonItem:
+    course_id: str
+    title: str | None
+    career_tags: list[str]
+    direction_match: str
+    average_gpa: float | None
+    prerequisite_readiness: str
+    missing_prerequisites: list[str]
+    notes: list[str]
+
+
+@dataclass(frozen=True)
+class CourseComparison:
+    course_ids: list[str]
+    dimension: str | None
+    courses: list[CourseComparisonItem]
+    notes: list[str]

@@ -52,6 +52,7 @@ Start with the local MVP:
 | `get_course_profile` tool | Implemented | Structured lookup from `courses` table. |
 | `get_gpa_stats` tool | Implemented | Structured lookup and aggregation from `gpa_stats` rows. |
 | `check_prerequisites` tool | Implemented | Course-ID prerequisite readiness check from official ECE prerequisite text. |
+| `compare_courses` tool | Implemented | Structured comparison object over course profiles, GPA, prerequisites, and direction tags. |
 | React frontend | Planned | Will start after backend skeleton and mocked APIs. |
 | Real RAG pipeline | Planned | pgvector retrieval, ingestion, embeddings, and fallback are not implemented yet. |
 | vLLM integration | Planned | Later Phase 1/2 serving work. |

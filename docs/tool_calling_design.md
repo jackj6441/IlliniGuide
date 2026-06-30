@@ -100,10 +100,49 @@ Output:
 }
 ```
 
+### `compare_courses`
+
+Status: Implemented
+
+Purpose:
+
+Combine structured course profile, GPA, prerequisite readiness, and optional career-direction tags into a testable comparison object. This tool does not call the LLM and does not write the final advisor-style answer.
+
+Input:
+
+```json
+{
+  "course_ids": ["ECE 408", "CS 433"],
+  "dimension": "ai_infra",
+  "completed_courses": ["ECE 220"]
+}
+```
+
+Output:
+
+```json
+{
+  "course_ids": ["ECE 408", "CS 433"],
+  "dimension": "ai_infra",
+  "courses": [
+    {
+      "course_id": "ECE 408",
+      "title": "Applied Parallel Programming",
+      "career_tags": ["ai_infra"],
+      "direction_match": "match",
+      "average_gpa": 3.5,
+      "prerequisite_readiness": "likely_ready",
+      "missing_prerequisites": [],
+      "notes": []
+    }
+  ],
+  "notes": []
+}
+```
+
 ## Planned
 
 - `search_course_docs`
-- `compare_courses`
 - `recommend_courses`
 - Manual tool router
 - Debug tool trace
