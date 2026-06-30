@@ -56,3 +56,21 @@ class CourseComparison:
     dimension: str | None
     courses: list[CourseComparisonItem]
     notes: list[str]
+
+
+@dataclass(frozen=True)
+class CourseRecommendation:
+    course_id: str
+    title: str
+    score: float
+    score_breakdown: dict[str, float]
+    reason_codes: list[str]
+    notes: list[str]
+
+
+@dataclass(frozen=True)
+class CourseRecommendations:
+    target_direction: str
+    completed_courses: list[str]
+    recommendations: list[CourseRecommendation]
+    notes: list[str]

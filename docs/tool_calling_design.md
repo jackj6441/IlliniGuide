@@ -140,10 +140,57 @@ Output:
 }
 ```
 
+### `recommend_courses`
+
+Status: Implemented
+
+Purpose:
+
+Recommend courses for a target direction using explicit scoring components. The numeric score is an internal/debug signal and should not be shown in the normal user UI by default.
+
+Courses must have a matching `career_tags` entry to be recommended in this first version. This prevents GPA or prerequisite signals from producing unrelated recommendations.
+
+Input:
+
+```json
+{
+  "target_direction": "ai_infra",
+  "completed_courses": ["ECE 220"],
+  "max_results": 5
+}
+```
+
+Output:
+
+```json
+{
+  "target_direction": "ai_infra",
+  "completed_courses": ["ECE 220"],
+  "recommendations": [
+    {
+      "course_id": "ECE 408",
+      "title": "Applied Parallel Programming",
+      "score": 0.86,
+      "score_breakdown": {
+        "direction_match": 1.0,
+        "prerequisite_readiness": 1.0,
+        "course_level_progression": 1.0,
+        "gpa_risk": 0.75
+      },
+      "reason_codes": ["ai_infra_match", "prerequisites_satisfied"],
+      "notes": []
+    }
+  ],
+  "notes": [
+    "Scores are internal debug signals and should not be shown in normal UI.",
+    "Courses without matching career tags are excluded in this first version."
+  ]
+}
+```
+
 ## Planned
 
 - `search_course_docs`
-- `recommend_courses`
 - Manual tool router
 - Debug tool trace
 
