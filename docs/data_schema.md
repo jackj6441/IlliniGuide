@@ -40,6 +40,14 @@ This is not a long-term migration system. It is a Phase 1 development initialize
 - PostgreSQL integration test using Docker Compose in CI.
 - Repository/query layer for course lookup and retrieval.
 
+## Current Real Data
+
+Status: Partial
+
+The WAF Grade Disparities CSV ingestion script can populate `gpa_stats` and matching `courses` records. The first bounded run inserted 20 ECE/CS GPA rows into the local development database.
+
+See `docs/data_sources.md` for source and boundary details.
+
 ## Design Notes
 
 Structured course facts and vector chunks are separate on purpose:

@@ -9,6 +9,7 @@ The project is framed as an AI infrastructure and LLM serving system, not a simp
 - [PROJECT_SOP.md](PROJECT_SOP.md): full project SOP, roadmap, architecture, API design, data model, evaluation plan, and execution plan.
 - [AGENTS.md](AGENTS.md): collaboration rules for tutor-first implementation, testing, documentation, and interview readiness.
 - [docs/architecture.md](docs/architecture.md): current architecture status and planned module boundaries.
+- [docs/data_sources.md](docs/data_sources.md): current real-data sources and ingestion boundaries.
 - [docs/rag_design.md](docs/rag_design.md): current mock RAG design and planned retrieval pipeline.
 - [docs/demo_script.md](docs/demo_script.md): demo flow, with implementation status tracked honestly.
 
@@ -44,6 +45,7 @@ Start with the local MVP:
 | FastAPI backend skeleton | Implemented | Routes exist with mocked service responses. |
 | Database models | Implemented | SQLAlchemy models exist for courses, instructors, GPA stats, chunks, and eval logs. |
 | Database initialization | Implemented | `scripts.init_db` creates the pgvector extension and current tables. |
+| GPA ingestion | Implemented | Bounded WAF GPA CSV ingestion, default limit 20 ECE/CS rows. |
 | Mock RAG | Implemented | Keyword retrieval over sample course chunks with citations. |
 | React frontend | Planned | Will start after backend skeleton and mocked APIs. |
 | Real RAG pipeline | Planned | pgvector retrieval, ingestion, embeddings, and fallback are not implemented yet. |
@@ -68,6 +70,13 @@ Initialize database tables:
 ```bash
 cd backend
 .venv/bin/python -m scripts.init_db
+```
+
+Ingest 20 GPA/instructor rows from the WAF Grade Disparities source:
+
+```bash
+cd backend
+.venv/bin/python -m scripts.ingest_gpa --limit 20
 ```
 
 The application backend and frontend are not implemented yet.
