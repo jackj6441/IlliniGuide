@@ -11,6 +11,7 @@ The project is framed as an AI infrastructure and LLM serving system, not a simp
 - [docs/architecture.md](docs/architecture.md): current architecture status and planned module boundaries.
 - [docs/data_sources.md](docs/data_sources.md): current real-data sources and ingestion boundaries.
 - [docs/rag_design.md](docs/rag_design.md): current mock RAG design and planned retrieval pipeline.
+- [docs/tool_calling_design.md](docs/tool_calling_design.md): current structured tool design and planned tool router.
 - [docs/demo_script.md](docs/demo_script.md): demo flow, with implementation status tracked honestly.
 
 ## Target Stack
@@ -48,6 +49,7 @@ Start with the local MVP:
 | GPA ingestion | Implemented | Bounded WAF GPA CSV ingestion, default limit 20 ECE/CS rows. |
 | ECE prerequisite ingestion | Implemented | Bounded official ECE courses ingestion, default limit 20 rows. |
 | DB-aware mock RAG | Implemented | Keyword retrieval over course DB rows, with sample chunk fallback. |
+| `get_course_profile` tool | Implemented | Structured lookup from `courses` table. |
 | React frontend | Planned | Will start after backend skeleton and mocked APIs. |
 | Real RAG pipeline | Planned | pgvector retrieval, ingestion, embeddings, and fallback are not implemented yet. |
 | vLLM integration | Planned | Later Phase 1/2 serving work. |

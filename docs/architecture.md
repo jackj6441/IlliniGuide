@@ -35,6 +35,7 @@ This document tracks the architecture as it becomes implemented. It must disting
 - Bounded WAF GPA CSV ingestion into `courses` and `gpa_stats`.
 - Bounded ECE prerequisite ingestion into `courses`.
 - DB-aware mock RAG service with course ID normalization, keyword retrieval, citation formatting, and sample chunk fallback.
+- First structured course tool: `get_course_profile`.
 
 ## Planned
 
