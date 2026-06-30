@@ -36,10 +36,44 @@ Output:
 }
 ```
 
+### `get_gpa_stats`
+
+Status: Implemented
+
+Purpose:
+
+Return structured GPA evidence from the `gpa_stats` table. This tool computes a course-level average from available rows and preserves instructor/term-level source evidence for later comparison and explanation.
+
+Input:
+
+```json
+{
+  "course_id": "CS 100",
+  "instructor_name": null
+}
+```
+
+Output:
+
+```json
+{
+  "course_id": "CS 100",
+  "average_gpa": 3.42,
+  "instructor_stats": [
+    {
+      "instructor_name": "Example Instructor",
+      "term": "Fall 2025",
+      "average_gpa": 3.42,
+      "grade_distribution": {},
+      "source_url": "https://waf.cs.illinois.edu/visualizations/Grade-Disparities-and-Accolades-by-Instructor/"
+    }
+  ]
+}
+```
+
 ## Planned
 
 - `search_course_docs`
-- `get_gpa_stats`
 - `check_prerequisites`
 - `compare_courses`
 - `recommend_courses`

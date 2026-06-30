@@ -50,6 +50,7 @@ Start with the local MVP:
 | ECE prerequisite ingestion | Implemented | Bounded official ECE courses ingestion, default limit 20 rows. |
 | DB-aware mock RAG | Implemented | Keyword retrieval over course DB rows, with sample chunk fallback. |
 | `get_course_profile` tool | Implemented | Structured lookup from `courses` table. |
+| `get_gpa_stats` tool | Implemented | Structured lookup and aggregation from `gpa_stats` rows. |
 | React frontend | Planned | Will start after backend skeleton and mocked APIs. |
 | Real RAG pipeline | Planned | pgvector retrieval, ingestion, embeddings, and fallback are not implemented yet. |
 | vLLM integration | Planned | Later Phase 1/2 serving work. |
