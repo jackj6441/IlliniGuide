@@ -28,7 +28,7 @@ Start with the local MVP:
 2. Build FastAPI backend skeleton. Status: Implemented with mocked services.
 3. Add `/health`, `/api/chat`, `/api/compare`, and `/api/recommend`. Status: Implemented with mocked responses.
 4. Add PostgreSQL and pgvector setup.
-5. Implement database models.
+5. Implement database models. Status: Implemented.
 6. Add mock keyword-based RAG over sample course data.
 7. Build frontend MVP with chat, comparison, citations, and debug trace.
 
@@ -41,6 +41,7 @@ Start with the local MVP:
 | Repository skeleton | Implemented | Top-level `backend/`, `frontend/`, `docs/`, `eval/`, and `infra/` directories exist. |
 | PostgreSQL Compose service | Implemented | `docker-compose.yml` defines a pgvector-backed PostgreSQL service. |
 | FastAPI backend skeleton | Implemented | Routes exist with mocked service responses. |
+| Database models | Implemented | SQLAlchemy models exist for courses, instructors, GPA stats, chunks, and eval logs. |
 | React frontend | Planned | Will start after backend skeleton and mocked APIs. |
 | RAG pipeline | Planned | Mock keyword retrieval comes before embeddings. |
 | vLLM integration | Planned | Later Phase 1/2 serving work. |

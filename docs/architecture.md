@@ -24,11 +24,19 @@ This document tracks the architecture as it becomes implemented. It must disting
   - `POST /api/recommend`
 - Pydantic request/response schemas for the initial API contract.
 - Mock advising service used to unblock frontend development.
+- SQLAlchemy database models for:
+  - `courses`
+  - `instructors`
+  - `gpa_stats`
+  - `course_chunks`
+  - `eval_runs`
+  - `eval_results`
 
 ## Planned
 
 - Service-layer RAG and tool orchestration.
-- PostgreSQL models and migrations.
+- Alembic migrations.
+- Real PostgreSQL connection tests.
 - React frontend for chat and course comparison.
 - vLLM-compatible LLM client abstraction.
 - Prometheus/Grafana observability.
