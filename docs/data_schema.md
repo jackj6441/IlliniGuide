@@ -15,11 +15,29 @@ The backend now defines SQLAlchemy models for the core database schema. The mode
 | `eval_runs` | Implemented | Evaluation run metadata. |
 | `eval_results` | Implemented | Per-question evaluation outputs, retrieved evidence, scores, and latency. |
 
+## Initialization
+
+Status: Implemented
+
+Run:
+
+```bash
+docker compose up -d postgres
+cd backend
+.venv/bin/python -m scripts.init_db
+```
+
+The initialization script:
+
+1. Creates the PostgreSQL `vector` extension if it does not exist.
+2. Creates the current SQLAlchemy tables with `Base.metadata.create_all`.
+
+This is not a long-term migration system. It is a Phase 1 development initializer.
+
 ## Planned
 
 - Alembic migrations.
-- PostgreSQL integration test using Docker Compose.
-- pgvector extension initialization script.
+- PostgreSQL integration test using Docker Compose in CI.
 - Repository/query layer for course lookup and retrieval.
 
 ## Design Notes

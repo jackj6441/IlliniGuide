@@ -42,6 +42,7 @@ Start with the local MVP:
 | PostgreSQL Compose service | Implemented | `docker-compose.yml` defines a pgvector-backed PostgreSQL service. |
 | FastAPI backend skeleton | Implemented | Routes exist with mocked service responses. |
 | Database models | Implemented | SQLAlchemy models exist for courses, instructors, GPA stats, chunks, and eval logs. |
+| Database initialization | Implemented | `scripts.init_db` creates the pgvector extension and current tables. |
 | React frontend | Planned | Will start after backend skeleton and mocked APIs. |
 | RAG pipeline | Planned | Mock keyword retrieval comes before embeddings. |
 | vLLM integration | Planned | Later Phase 1/2 serving work. |
@@ -58,6 +59,13 @@ Start the database:
 
 ```bash
 docker compose up postgres
+```
+
+Initialize database tables:
+
+```bash
+cd backend
+.venv/bin/python -m scripts.init_db
 ```
 
 The application backend and frontend are not implemented yet.

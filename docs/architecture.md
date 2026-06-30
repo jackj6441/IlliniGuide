@@ -31,6 +31,7 @@ This document tracks the architecture as it becomes implemented. It must disting
   - `course_chunks`
   - `eval_runs`
   - `eval_results`
+- Database initialization script for pgvector extension and current tables.
 
 ## Planned
 
