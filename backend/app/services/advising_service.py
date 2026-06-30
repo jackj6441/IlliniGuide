@@ -1,9 +1,9 @@
 from time import perf_counter
+from collections.abc import Sequence
 
 from app.schemas import (
     ChatRequest,
     ChatResponse,
-    Citation,
     CompareRequest,
     CompareResponse,
     CourseSummary,
@@ -12,19 +12,15 @@ from app.schemas import (
     RecommendRequest,
     RecommendResponse,
 )
-
-
-MOCK_CITATION = Citation(
-    source_name="Mock Course Dataset",
-    source_url="https://example.com/illiniguideserve/mock-course-data",
-    course_id="ECE 391",
-    snippet="Mock evidence placeholder. TODO: replace with real retrieved course evidence in Version 1 RAG.",
-)
+from app.services.rag.citation import citation_from_chunk
+from app.services.rag.retriever import RetrievedChunk, search_course_docs
 
 
 def build_mock_chat_response(request: ChatRequest) -> ChatResponse:
     start = perf_counter()
-    used_tools = ["mock_intent_detector", "mock_course_retriever"]
+    retrieved_chunks = search_course_docs(request.message, top_k=5)
+    citations = [citation_from_chunk(chunk) for chunk in retrieved_chunks]
+    used_tools = ["mock_intent_detector", "mock_keyword_retriever"]
     debug_trace = None
 
     if request.debug:
@@ -39,21 +35,21 @@ def build_mock_chat_response(request: ChatRequest) -> ChatResponse:
             ],
             retrieved_chunks=[
                 {
-                    "course_id": "ECE 391",
-                    "source_name": MOCK_CITATION.source_name,
-                    "snippet": MOCK_CITATION.snippet,
+                    "course_id": chunk.course_id,
+                    "source_name": chunk.source_name,
+                    "section_type": chunk.section_type,
+                    "score": chunk.score,
+                    "snippet": chunk.chunk_text,
                 }
+                for chunk in retrieved_chunks
             ],
             recommendation_scores=[],
         )
 
     latency_ms = int((perf_counter() - start) * 1000)
     return ChatResponse(
-        answer=(
-            "This is a mocked advising response. TODO: replace this with RAG + tool-orchestrated "
-            "answer generation in Version 1."
-        ),
-        citations=[MOCK_CITATION],
+        answer=_build_grounded_mock_answer(retrieved_chunks),
+        citations=citations,
         used_tools=used_tools,
         debug_trace=debug_trace,
         latency_ms=latency_ms,
@@ -61,6 +57,9 @@ def build_mock_chat_response(request: ChatRequest) -> ChatResponse:
 
 
 def build_mock_compare_response(request: CompareRequest) -> CompareResponse:
+    query = f"Compare {' '.join(request.course_ids)} {request.dimension or ''}".strip()
+    retrieved_chunks = search_course_docs(query, course_ids=request.course_ids, top_k=5)
+    citations = [citation_from_chunk(chunk) for chunk in retrieved_chunks]
     courses = [
         CourseSummary(
             course_id=course_id,
@@ -82,7 +81,7 @@ def build_mock_compare_response(request: CompareRequest) -> CompareResponse:
             "dimension": request.dimension,
             "status": "mocked",
         },
-        citations=[MOCK_CITATION],
+        citations=citations,
     )
 
 
@@ -94,7 +93,7 @@ def build_mock_recommend_response(request: RecommendRequest) -> RecommendRespons
             "Mock recommendation for the requested direction. TODO: replace with direction_match, "
             "prerequisite_readiness, GPA risk, and course progression scoring."
         ),
-        citations=[MOCK_CITATION],
+        citations=[],
     )
     debug_scores = None
     if request.debug:
@@ -110,4 +109,19 @@ def build_mock_recommend_response(request: RecommendRequest) -> RecommendRespons
     return RecommendResponse(
         recommendations=[recommendation],
         debug_scores=debug_scores,
+    )
+
+
+def _build_grounded_mock_answer(retrieved_chunks: Sequence[RetrievedChunk]) -> str:
+    if not retrieved_chunks:
+        return (
+            "I could not find enough evidence in the mock course dataset to answer this. "
+            "TODO: replace this fallback with structured DB fallback and real RAG confidence checks."
+        )
+
+    course_ids = ", ".join(chunk.course_id for chunk in retrieved_chunks)
+    evidence_summary = " ".join(chunk.chunk_text for chunk in retrieved_chunks[:2])
+    return (
+        f"Based on the mock retrieved evidence for {course_ids}: {evidence_summary} "
+        "TODO: replace this template with LLM evidence synthesis in Version 1."
     )

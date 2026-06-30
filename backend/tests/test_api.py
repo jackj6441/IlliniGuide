@@ -23,7 +23,8 @@ def test_chat_returns_mock_response_shape() -> None:
     body = response.json()
     assert body["answer"]
     assert body["citations"]
-    assert body["used_tools"] == ["mock_intent_detector", "mock_course_retriever"]
+    assert body["citations"][0]["course_id"] == "ECE 391"
+    assert body["used_tools"] == ["mock_intent_detector", "mock_keyword_retriever"]
     assert body["debug_trace"]["intent"] == "course_qa"
     assert isinstance(body["latency_ms"], int)
 

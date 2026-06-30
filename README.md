@@ -9,6 +9,7 @@ The project is framed as an AI infrastructure and LLM serving system, not a simp
 - [PROJECT_SOP.md](PROJECT_SOP.md): full project SOP, roadmap, architecture, API design, data model, evaluation plan, and execution plan.
 - [AGENTS.md](AGENTS.md): collaboration rules for tutor-first implementation, testing, documentation, and interview readiness.
 - [docs/architecture.md](docs/architecture.md): current architecture status and planned module boundaries.
+- [docs/rag_design.md](docs/rag_design.md): current mock RAG design and planned retrieval pipeline.
 - [docs/demo_script.md](docs/demo_script.md): demo flow, with implementation status tracked honestly.
 
 ## Target Stack
@@ -29,7 +30,7 @@ Start with the local MVP:
 3. Add `/health`, `/api/chat`, `/api/compare`, and `/api/recommend`. Status: Implemented with mocked responses.
 4. Add PostgreSQL and pgvector setup.
 5. Implement database models. Status: Implemented.
-6. Add mock keyword-based RAG over sample course data.
+6. Add mock keyword-based RAG over sample course data. Status: Implemented.
 7. Build frontend MVP with chat, comparison, citations, and debug trace.
 
 ## Current Status
@@ -43,8 +44,9 @@ Start with the local MVP:
 | FastAPI backend skeleton | Implemented | Routes exist with mocked service responses. |
 | Database models | Implemented | SQLAlchemy models exist for courses, instructors, GPA stats, chunks, and eval logs. |
 | Database initialization | Implemented | `scripts.init_db` creates the pgvector extension and current tables. |
+| Mock RAG | Implemented | Keyword retrieval over sample course chunks with citations. |
 | React frontend | Planned | Will start after backend skeleton and mocked APIs. |
-| RAG pipeline | Planned | Mock keyword retrieval comes before embeddings. |
+| Real RAG pipeline | Planned | pgvector retrieval, ingestion, embeddings, and fallback are not implemented yet. |
 | vLLM integration | Planned | Later Phase 1/2 serving work. |
 
 ## Local Development
