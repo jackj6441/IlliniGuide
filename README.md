@@ -46,6 +46,7 @@ Start with the local MVP:
 | Database models | Implemented | SQLAlchemy models exist for courses, instructors, GPA stats, chunks, and eval logs. |
 | Database initialization | Implemented | `scripts.init_db` creates the pgvector extension and current tables. |
 | GPA ingestion | Implemented | Bounded WAF GPA CSV ingestion, default limit 20 ECE/CS rows. |
+| ECE prerequisite ingestion | Implemented | Bounded official ECE courses ingestion, default limit 20 rows. |
 | Mock RAG | Implemented | Keyword retrieval over sample course chunks with citations. |
 | React frontend | Planned | Will start after backend skeleton and mocked APIs. |
 | Real RAG pipeline | Planned | pgvector retrieval, ingestion, embeddings, and fallback are not implemented yet. |
@@ -77,6 +78,13 @@ Ingest 20 GPA/instructor rows from the WAF Grade Disparities source:
 ```bash
 cd backend
 .venv/bin/python -m scripts.ingest_gpa --limit 20
+```
+
+Ingest 20 ECE course prerequisite rows from the official ECE courses page:
+
+```bash
+cd backend
+.venv/bin/python -m scripts.ingest_ece_prereqs --limit 20
 ```
 
 The application backend and frontend are not implemented yet.

@@ -33,6 +33,7 @@ This document tracks the architecture as it becomes implemented. It must disting
   - `eval_results`
 - Database initialization script for pgvector extension and current tables.
 - Bounded WAF GPA CSV ingestion into `courses` and `gpa_stats`.
+- Bounded ECE prerequisite ingestion into `courses`.
 - Mock RAG service with sample chunks, course ID normalization, keyword retrieval, and citation formatting.
 
 ## Planned

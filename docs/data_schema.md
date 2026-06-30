@@ -46,6 +46,8 @@ Status: Partial
 
 The WAF Grade Disparities CSV ingestion script can populate `gpa_stats` and matching `courses` records. The first bounded run inserted 20 ECE/CS GPA rows into the local development database.
 
+The ECE Courses and Prerequisites ingestion script can populate official ECE `courses` title and prerequisite fields. The first bounded run inserted or updated 20 ECE course rows.
+
 See `docs/data_sources.md` for source and boundary details.
 
 ## Design Notes
