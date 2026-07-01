@@ -34,6 +34,7 @@ This document tracks the architecture as it becomes implemented. It must disting
 - Database initialization script for pgvector extension and current tables.
 - Bounded WAF GPA CSV ingestion into `courses` and `gpa_stats`.
 - Bounded ECE prerequisite ingestion into `courses`.
+- Manual career tag seed for selected core courses already present in `courses`.
 - DB-aware mock RAG service with course ID normalization, keyword retrieval, citation formatting, and sample chunk fallback.
 - First structured course tool: `get_course_profile`.
 - Structured GPA stats tool: `get_gpa_stats`.

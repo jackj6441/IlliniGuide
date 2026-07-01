@@ -48,6 +48,7 @@ Start with the local MVP:
 | Database initialization | Implemented | `scripts.init_db` creates the pgvector extension and current tables. |
 | GPA ingestion | Implemented | Bounded WAF GPA CSV ingestion, default limit 20 ECE/CS rows. |
 | ECE prerequisite ingestion | Implemented | Bounded official ECE courses ingestion, default limit 20 rows. |
+| Career tag seed | Implemented | Reproducible manual tags for selected core courses; only updates courses already in DB. |
 | DB-aware mock RAG | Implemented | Keyword retrieval over course DB rows, with sample chunk fallback. |
 | `get_course_profile` tool | Implemented | Structured lookup from `courses` table. |
 | `get_gpa_stats` tool | Implemented | Structured lookup and aggregation from `gpa_stats` rows. |
@@ -92,6 +93,15 @@ Ingest 20 ECE course prerequisite rows from the official ECE courses page:
 cd backend
 .venv/bin/python -m scripts.ingest_ece_prereqs --limit 20
 ```
+
+Seed manual career tags for already-ingested core courses:
+
+```bash
+cd backend
+.venv/bin/python -m scripts.seed_career_tags
+```
+
+The initial 20-row ECE ingestion may not include upper-level tagged courses such as `ECE 408`. Expand the ECE ingestion limit before seeding tags when you are ready to broaden the dataset.
 
 The application backend and frontend are not implemented yet.
 

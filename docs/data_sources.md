@@ -61,3 +61,45 @@ cd backend
 ```
 
 This source is used for ECE course titles and prerequisite text. It does not yet parse prerequisite logic into a graph.
+
+## Manual Career Tags
+
+Status: Implemented for selected core courses
+
+Career tags are manually curated labels used by the first version of `recommend_courses`.
+
+Current tags include examples such as:
+
+```text
+ai_infra
+ai_ml
+systems
+software_engineering
+computer_architecture
+data_science
+robotics_cv
+security
+```
+
+Run:
+
+```bash
+cd backend
+.venv/bin/python -m scripts.seed_career_tags
+```
+
+For the AI infrastructure tags to attach, the `courses` table must already contain the configured upper-level courses. With the initial 20-row ECE ingestion, many of these courses are not present yet. Expand the ECE ingestion limit first when you are ready to broaden the dataset:
+
+```bash
+cd backend
+.venv/bin/python -m scripts.ingest_ece_prereqs --limit 80
+.venv/bin/python -m scripts.seed_career_tags
+```
+
+Rules:
+
+- The seed only updates courses already present in the `courses` table.
+- It does not create fake course records.
+- It is re-runnable.
+- These tags are project annotations, not official UIUC metadata.
+- Recommendation results should mention that tags are a first-version manual signal when shown in debug or documentation.
