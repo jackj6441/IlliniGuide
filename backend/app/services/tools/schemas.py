@@ -74,3 +74,44 @@ class CourseRecommendations:
     completed_courses: list[str]
     recommendations: list[CourseRecommendation]
     notes: list[str]
+
+
+@dataclass(frozen=True)
+class SearchCourseDocsRequest:
+    query: str
+    course_ids: list[str] | None = None
+    top_k: int = 5
+
+
+@dataclass(frozen=True)
+class RetrievedDoc:
+    course_id: str
+    source_name: str
+    source_url: str
+    section_type: str
+    snippet: str
+    score: float
+
+
+@dataclass(frozen=True)
+class SearchCourseDocsResult:
+    query: str
+    course_ids: list[str]
+    docs: list[RetrievedDoc]
+    notes: list[str]
+
+
+@dataclass(frozen=True)
+class ToolCall:
+    tool_name: str
+    arguments: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class ToolPlan:
+    intent: str
+    course_ids: list[str]
+    target_direction: str | None
+    completed_courses: list[str]
+    tool_calls: list[ToolCall]
+    notes: list[str]

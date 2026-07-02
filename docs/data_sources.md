@@ -52,6 +52,7 @@ Current ingestion boundary:
 - The source URL is stored on each `courses` row.
 - The script is re-runnable and updates existing course title/prerequisite fields.
 - The first real run ingested 20 source-tagged ECE course rows.
+- The local development database was later expanded to 80 ECE course rows so upper-level systems and AI infrastructure courses such as `ECE 408` and `ECE 411` are available for tool testing.
 
 Run:
 
@@ -95,6 +96,14 @@ cd backend
 .venv/bin/python -m scripts.ingest_ece_prereqs --limit 80
 .venv/bin/python -m scripts.seed_career_tags
 ```
+
+Current local development result after expanding ECE ingestion to 80 rows:
+
+```text
+Seeded career tags for 11/12 configured courses. Missing courses: ECE 419.
+```
+
+This enables `recommend_courses("ai_infra")` to return tagged courses such as `ECE 408` and `ECE 411` in the local development database.
 
 Rules:
 

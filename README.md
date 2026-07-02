@@ -12,6 +12,8 @@ The project is framed as an AI infrastructure and LLM serving system, not a simp
 - [docs/data_sources.md](docs/data_sources.md): current real-data sources and ingestion boundaries.
 - [docs/rag_design.md](docs/rag_design.md): current mock RAG design and planned retrieval pipeline.
 - [docs/tool_calling_design.md](docs/tool_calling_design.md): current structured tool design and planned tool router.
+- [docs/llm_serving_design.md](docs/llm_serving_design.md): LLM client abstraction, vLLM concepts, and Phase C roadmap.
+- [docs/vllm_setup.md](docs/vllm_setup.md): step-by-step manual for launching vLLM on the ICRN H200 and wiring the backend to it.
 - [docs/demo_script.md](docs/demo_script.md): demo flow, with implementation status tracked honestly.
 
 ## Target Stack
@@ -55,6 +57,14 @@ Start with the local MVP:
 | `check_prerequisites` tool | Implemented | Course-ID prerequisite readiness check from official ECE prerequisite text. |
 | `compare_courses` tool | Implemented | Structured comparison object over course profiles, GPA, prerequisites, and direction tags. |
 | `recommend_courses` tool | Implemented | Rule-based recommendations with internal score breakdown for debug/API use. |
+| `search_course_docs` tool | Implemented | Explicit-schema wrapper around the DB-aware keyword retriever, with course-ID normalization and safe empty/fallback notes. |
+| Manual tool router | Implemented | Rule-based intent detection (`course_qa`/`comparison`/`recommendation`/`prereq_check`) producing a `ToolPlan` with an ordered `ToolCall` sequence. |
+| Debug tool trace | Implemented | `ToolTraceCollector` records per-tool arguments, latency, status, and result summary; serialized to `debug_trace` when `debug=true`. Same collector will feed Prometheus in Phase E. |
+| `/api/chat` real tool pipeline | Implemented | Router → dispatcher → real tool execution → template answer synthesis. Per-tool errors are isolated; LLM synthesis still template-based (replaced in vLLM phase). |
+| LLM client abstraction | Implemented | `services/llm/` — `LLMClient` Protocol, `MockLLMClient` (deterministic), `create_llm_client()` factory reading `LLM_BACKEND` env. `vllm_remote` / `external_debug` backends planned (Task C3). |
+| `/api/chat` LLM synthesis | Implemented | Per-intent prompt templates + async `build_answer` calling `LLMClient`. LLM errors record `status="error"` and fall back to deterministic template. `used_tools` ends with `llm_generate`. |
+| `vllm_remote` / `external_debug` backends | Implemented | `VLLMRemoteClient` (httpx.AsyncClient over `/v1/chat/completions`) with exponential-backoff retry on network/5xx, no retry on 4xx. Same class serves both backends; env resolution differs. |
+| vLLM launch on ICRN H200 | Manual — awaiting execution | Follow `docs/vllm_setup.md`. Target model: `Qwen2.5-7B-Instruct`. Helper scripts: `scripts/verify_vllm.py` (smoke test), `scripts/vllm_metrics_snapshot.py` (KV cache / TTFT snapshot from `/metrics`). |
 | React frontend | Planned | Will start after backend skeleton and mocked APIs. |
 | Real RAG pipeline | Planned | pgvector retrieval, ingestion, embeddings, and fallback are not implemented yet. |
 | vLLM integration | Planned | Later Phase 1/2 serving work. |
@@ -102,6 +112,8 @@ cd backend
 ```
 
 The initial 20-row ECE ingestion may not include upper-level tagged courses such as `ECE 408`. Expand the ECE ingestion limit before seeding tags when you are ready to broaden the dataset.
+
+The current local development database has been expanded to 80 ECE rows and career tags were seeded for 11 configured core courses.
 
 The application backend and frontend are not implemented yet.
 

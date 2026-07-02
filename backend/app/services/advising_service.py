@@ -6,62 +6,72 @@ from sqlalchemy.orm import Session
 from app.schemas import (
     ChatRequest,
     ChatResponse,
+    Citation,
     CompareRequest,
     CompareResponse,
     CourseSummary,
-    DebugTrace,
     Recommendation,
     RecommendRequest,
     RecommendResponse,
 )
+from app.services.answer_synthesis import build_answer
+from app.services.llm import LLMClient, create_llm_client
 from app.services.rag.citation import citation_from_chunk
 from app.services.rag.retriever import (
     RetrievedChunk,
     search_course_docs,
     search_course_docs_from_db,
 )
+from app.services.tools.dispatcher import DispatchedResults, execute_plan
+from app.services.tools.router import plan_tools
+from app.services.tools.schemas import RetrievedDoc
+from app.services.tools.trace import ToolTraceCollector
 
 
-def build_mock_chat_response(
+async def build_chat_response(
     request: ChatRequest,
-    db_session: Session | None = None,
+    db_session: Session,
+    llm_client: LLMClient | None = None,
 ) -> ChatResponse:
+    """End-to-end chat pipeline: router → dispatcher → LLM synthesis.
+
+    ``llm_client`` is injectable for tests. Production callers pass nothing;
+    the factory reads ``LLM_BACKEND`` from env and returns the right backend.
+    """
     start = perf_counter()
-    retrieved_chunks = _search_docs(request.message, db_session=db_session, top_k=5)
-    citations = [citation_from_chunk(chunk) for chunk in retrieved_chunks]
-    used_tools = ["mock_intent_detector", _retriever_name(db_session)]
-    debug_trace = None
+    collector = ToolTraceCollector()
+    client = llm_client or create_llm_client()
 
-    if request.debug:
-        debug_trace = DebugTrace(
-            intent="course_qa",
-            tool_calls=[
-                {
-                    "tool_name": "mock_course_retriever",
-                    "status": "mocked",
-                    "input": {"query": request.message},
-                }
-            ],
-            retrieved_chunks=[
-                {
-                    "course_id": chunk.course_id,
-                    "source_name": chunk.source_name,
-                    "section_type": chunk.section_type,
-                    "score": chunk.score,
-                    "snippet": chunk.chunk_text,
-                }
-                for chunk in retrieved_chunks
-            ],
-            recommendation_scores=[],
-        )
+    plan = plan_tools(request.message)
+    results = execute_plan(db_session, plan, collector)
 
+    citations = _citations_from_results(results)
+    answer = await build_answer(
+        plan.intent, request.message, results, client, collector
+    )
     latency_ms = int((perf_counter() - start) * 1000)
+
     return ChatResponse(
-        answer=_build_grounded_mock_answer(retrieved_chunks),
+        answer=answer,
         citations=citations,
-        used_tools=used_tools,
-        debug_trace=debug_trace,
+        used_tools=collector.tool_names(),
+        debug_trace=collector.to_debug_trace() if request.debug else None,
         latency_ms=latency_ms,
+    )
+
+
+def _citations_from_results(results: DispatchedResults) -> list[Citation]:
+    if results.search_result is None:
+        return []
+    return [_citation_from_doc(doc) for doc in results.search_result.docs]
+
+
+def _citation_from_doc(doc: RetrievedDoc) -> Citation:
+    return Citation(
+        source_name=doc.source_name,
+        source_url=doc.source_url,
+        course_id=doc.course_id,
+        snippet=doc.snippet,
     )
 
 
@@ -129,28 +139,13 @@ def build_mock_recommend_response(request: RecommendRequest) -> RecommendRespons
     )
 
 
-def _build_grounded_mock_answer(retrieved_chunks: Sequence[RetrievedChunk]) -> str:
-    if not retrieved_chunks:
-        return (
-            "I could not find enough evidence in the mock course dataset to answer this. "
-            "TODO: replace this fallback with structured DB fallback and real RAG confidence checks."
-        )
-
-    course_ids = ", ".join(chunk.course_id for chunk in retrieved_chunks)
-    evidence_summary = " ".join(chunk.chunk_text for chunk in retrieved_chunks[:2])
-    return (
-        f"Based on the mock retrieved evidence for {course_ids}: {evidence_summary} "
-        "TODO: replace this template with LLM evidence synthesis in Version 1."
-    )
-
-
 def _search_docs(
     query: str,
     *,
     db_session: Session | None,
     course_ids: list[str] | None = None,
     top_k: int = 5,
-) -> list[RetrievedChunk]:
+) -> Sequence[RetrievedChunk]:
     if db_session is not None:
         return search_course_docs_from_db(
             db_session,
@@ -159,9 +154,3 @@ def _search_docs(
             top_k=top_k,
         )
     return search_course_docs(query, course_ids=course_ids, top_k=top_k)
-
-
-def _retriever_name(db_session: Session | None) -> str:
-    if db_session is not None:
-        return "db_keyword_retriever"
-    return "mock_keyword_retriever"
