@@ -1,5 +1,6 @@
+import json
+from collections.abc import AsyncIterator, Sequence
 from time import perf_counter
-from collections.abc import Sequence
 
 from sqlalchemy.orm import Session
 
@@ -14,7 +15,7 @@ from app.schemas import (
     RecommendRequest,
     RecommendResponse,
 )
-from app.services.answer_synthesis import build_answer
+from app.services.answer_synthesis import build_answer, stream_answer
 from app.services.llm import LLMClient, create_llm_client
 from app.services.rag.citation import citation_from_chunk
 from app.services.rag.retriever import (
@@ -58,6 +59,60 @@ async def build_chat_response(
         debug_trace=collector.to_debug_trace() if request.debug else None,
         latency_ms=latency_ms,
     )
+
+
+async def build_chat_response_stream(
+    request: ChatRequest,
+    db_session: Session,
+    llm_client: LLMClient | None = None,
+) -> AsyncIterator[str]:
+    """Yield the chat response as Server-Sent Events (SSE) strings.
+
+    Event schema (each line ends with ``\\n\\n`` per the SSE spec):
+
+    - ``data: {"type": "content", "delta": "..."}`` — a text chunk from
+      the LLM. Emitted 0..N times.
+    - ``data: {"type": "metadata", "citations": [...], "used_tools": [...],
+      "latency_ms": 123, "debug_trace": {...}?}`` — emitted once, after
+      the LLM stream finishes; ``debug_trace`` is included only when
+      ``request.debug`` is true.
+    - ``data: [DONE]`` — end-of-stream marker.
+
+    The tools stage runs synchronously *before* streaming starts, so
+    citations and (mostly) the used-tools list are known at the point
+    where content starts flowing; they are still delivered in the final
+    ``metadata`` event because the ``llm_generate_stream`` trace entry is
+    only finalized after the stream ends.
+    """
+    start = perf_counter()
+    collector = ToolTraceCollector()
+    client = llm_client or create_llm_client()
+
+    plan = plan_tools(request.message)
+    results = execute_plan(db_session, plan, collector)
+    citations = _citations_from_results(results)
+
+    async for chunk in stream_answer(
+        plan.intent, request.message, results, client, collector
+    ):
+        yield _sse_event({"type": "content", "delta": chunk})
+
+    latency_ms = int((perf_counter() - start) * 1000)
+    metadata: dict = {
+        "type": "metadata",
+        "citations": [citation.model_dump() for citation in citations],
+        "used_tools": collector.tool_names(),
+        "latency_ms": latency_ms,
+    }
+    if request.debug:
+        metadata["debug_trace"] = collector.to_debug_trace().model_dump()
+
+    yield _sse_event(metadata)
+    yield "data: [DONE]\n\n"
+
+
+def _sse_event(payload: dict) -> str:
+    return f"data: {json.dumps(payload)}\n\n"
 
 
 def _citations_from_results(results: DispatchedResults) -> list[Citation]:

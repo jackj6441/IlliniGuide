@@ -101,6 +101,32 @@ async def test_mock_client_rejects_invalid_temperature() -> None:
 
 
 @pytest.mark.anyio
+async def test_mock_client_stream_yields_full_content_across_chunks(
+    sample_messages,
+) -> None:
+    client = MockLLMClient()
+
+    chunks = [chunk async for chunk in client.stream_generate(sample_messages)]
+
+    joined = "".join(chunks)
+    assert chunks, "stream must yield at least one chunk"
+    assert len(chunks) > 1, "stream must split output across multiple chunks"
+    assert "[mock stream backend=mock model=mock-model]" in joined
+    assert "What is ECE 391 about?" in joined
+
+
+@pytest.mark.anyio
+async def test_mock_client_stream_rejects_invalid_temperature(
+    sample_messages,
+) -> None:
+    client = MockLLMClient()
+
+    with pytest.raises(ValueError, match="temperature"):
+        async for _ in client.stream_generate(sample_messages, temperature=3.0):
+            pass
+
+
+@pytest.mark.anyio
 async def test_mock_client_rejects_invalid_max_tokens() -> None:
     client = MockLLMClient()
 

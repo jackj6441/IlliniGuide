@@ -12,6 +12,8 @@ one retry loop. Everything is testable without a running vLLM by injecting
 """
 
 import asyncio
+import json
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from time import perf_counter
 from typing import Any
@@ -78,6 +80,48 @@ class VLLMRemoteClient:
         latency_ms = max(0, int((perf_counter() - started_at) * 1000))
 
         return self._parse_response(raw, latency_ms)
+
+    async def stream_generate(
+        self,
+        messages: list[LLMMessage],
+        *,
+        temperature: float = DEFAULT_TEMPERATURE,
+        max_tokens: int = DEFAULT_MAX_TOKENS,
+    ) -> AsyncIterator[str]:
+        _validate_generate_kwargs(temperature, max_tokens)
+
+        payload = self._build_payload(messages, temperature, max_tokens)
+        payload["stream"] = True
+
+        client_kwargs: dict[str, Any] = {
+            "base_url": self.base_url,
+            "timeout": self.timeout_seconds,
+        }
+        if self.transport is not None:
+            client_kwargs["transport"] = self.transport
+
+        async with httpx.AsyncClient(**client_kwargs) as client:
+            async with client.stream(
+                "POST",
+                CHAT_COMPLETIONS_PATH,
+                json=payload,
+                headers=self._headers(),
+            ) as response:
+                if response.status_code >= 500:
+                    body = (await response.aread()).decode(errors="replace")
+                    raise VLLMServerError(
+                        f"vLLM server returned {response.status_code}: {body[:500]}"
+                    )
+                if response.status_code >= 400:
+                    body = (await response.aread()).decode(errors="replace")
+                    raise VLLMClientError(
+                        f"vLLM server returned {response.status_code}: {body[:500]}"
+                    )
+
+                async for line in response.aiter_lines():
+                    delta = _parse_sse_data_line(line)
+                    if delta is not None:
+                        yield delta
 
     def _build_payload(
         self,
@@ -163,3 +207,29 @@ class VLLMRemoteClient:
             prompt_tokens=usage.get("prompt_tokens"),
             completion_tokens=usage.get("completion_tokens"),
         )
+
+
+def _parse_sse_data_line(line: str) -> str | None:
+    """Extract the content delta from one line of an OpenAI-style SSE stream.
+
+    Returns the delta string, or None if the line is not a content chunk.
+    Blank lines, ``data: [DONE]`` terminators, non-``data:`` lines, and
+    events that carry only role or finish_reason produce None.
+    """
+    if not line or not line.startswith("data:"):
+        return None
+    payload = line[len("data:") :].strip()
+    if not payload or payload == "[DONE]":
+        return None
+    try:
+        event = json.loads(payload)
+    except json.JSONDecodeError:
+        return None
+    try:
+        delta = event["choices"][0].get("delta", {}) or {}
+    except (KeyError, IndexError, TypeError):
+        return None
+    content = delta.get("content")
+    if not isinstance(content, str) or not content:
+        return None
+    return content

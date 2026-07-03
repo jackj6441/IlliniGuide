@@ -184,9 +184,32 @@ DoD: user runs the manual through Step 8, verifies `debug_trace.tool_calls[-1].a
 
 ### Task C5 — Streaming (SSE) end-to-end
 
-Status: Planned
+Status: Implemented (backend); frontend client comes with Phase B.
 
-Extend `LLMClient` with `stream_generate` returning `AsyncIterator[str]`, add a streaming variant of `/api/chat`, wire a client using `EventSource`. Measure TTFT vs total latency and record the delta in the benchmark report.
+- **Protocol**: `LLMClient` now declares both `generate` (blocking) and `stream_generate` (async iterator of content deltas). Old callers are unaffected; streaming is a new capability, not a rewrite.
+- **MockLLMClient.stream_generate**: yields the deterministic mock output in ~6-character chunks with a small `asyncio.sleep` between them so tests can exercise real async iteration timing.
+- **VLLMRemoteClient.stream_generate**: sends `stream: true` in the OpenAI payload, opens a streaming HTTP response with `httpx.AsyncClient.stream("POST", ...)`, iterates SSE `data:` lines, JSON-decodes each, and yields `choices[0].delta.content`. Role-only preamble lines, `[DONE]`, and malformed JSON lines are tolerated (never surface as content). Retries are intentionally not applied to streams — retrying mid-stream would either duplicate content or lose position; failures propagate.
+- **answer_synthesis.stream_answer**: async generator wrapping `client.stream_generate`. Three paths, all recorded in the trace as `llm_generate_stream`:
+  - happy: yields chunks, records `status=success` with `chunks_yielded`.
+  - fails before first chunk: records `status=error`, adds a note, yields the deterministic template answer as a single chunk (graceful degradation preserved).
+  - fails mid-stream: records `status=error` with `partial: True`, adds a truncation note. Already-yielded chunks stay — the user sees a truncated but honest answer, not a discarded one.
+- **`ToolTraceCollector.record_completed_tool`**: new public method that records a `ToolCallTrace` given caller-measured latency and status. Used by streaming, where the sync `time_tool` context manager can't cleanly wrap an async generator's yield loop.
+- **New endpoint** `POST /api/chat/stream` returns `StreamingResponse(..., media_type="text/event-stream")`. Sends `Cache-Control: no-cache` and `X-Accel-Buffering: no` so intermediaries (nginx, ICRN's JupyterHub proxy) do not buffer chunks. The existing `POST /api/chat` (blocking) remains untouched — clients pick per request.
+- **Event schema** (line-delimited, SSE-standard `\n\n` terminator):
+
+```
+data: {"type": "content", "delta": "<chunk>"}
+data: {"type": "content", "delta": "<chunk>"}
+...
+data: {"type": "metadata", "citations": [...], "used_tools": [...], "latency_ms": 523, "debug_trace": {...}?}
+data: [DONE]
+```
+
+`citations`, `used_tools`, and `latency_ms` are always present in the `metadata` event. `debug_trace` appears only when the request body has `debug: true`.
+
+- **Tests**: 2 in `test_llm_client.py` (mock stream chunking, parameter validation), 5 in `test_vllm_backend.py` (SSE happy path, role-only prefix skip, 5xx, 4xx, malformed-line tolerance), 3 in `test_answer_synthesis.py` (happy stream, fail-before-first-chunk template fallback, mid-stream truncation), 2 in `test_api.py` (end-to-end SSE parsing plus debug-flag gating). Full suite: 156 passed.
+
+**Deferred to Phase B (frontend)**: `EventSource` client in the React chat page. That's where the perceived-latency win from streaming actually reaches the user.
 
 ### Task C6 — Benchmark + interview notes
 

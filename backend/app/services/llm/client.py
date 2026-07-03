@@ -1,4 +1,6 @@
+import asyncio
 import os
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from time import perf_counter
 from typing import Protocol, runtime_checkable
@@ -36,6 +38,19 @@ class LLMClient(Protocol):
         max_tokens: int = DEFAULT_MAX_TOKENS,
     ) -> LLMResponse:  # pragma: no cover - protocol
         ...
+
+    def stream_generate(
+        self,
+        messages: list[LLMMessage],
+        *,
+        temperature: float = DEFAULT_TEMPERATURE,
+        max_tokens: int = DEFAULT_MAX_TOKENS,
+    ) -> AsyncIterator[str]:  # pragma: no cover - protocol
+        ...
+
+
+MOCK_STREAM_CHUNK_SIZE = 6
+MOCK_STREAM_DELAY_SECONDS = 0.005
 
 
 @dataclass
@@ -79,6 +94,25 @@ class MockLLMClient:
             ),
             completion_tokens=_estimate_tokens(content),
         )
+
+    async def stream_generate(
+        self,
+        messages: list[LLMMessage],
+        *,
+        temperature: float = DEFAULT_TEMPERATURE,
+        max_tokens: int = DEFAULT_MAX_TOKENS,
+    ) -> AsyncIterator[str]:
+        _validate_generate_kwargs(temperature, max_tokens)
+
+        last_user = _last_user_content(messages)
+        content = (
+            f"[mock stream backend={self.backend_name} model={self.model_name}] "
+            f"Echoing last user turn: {last_user!r}. "
+            "TODO: replace with vLLM streamed answer in Task C3."
+        )
+        for start in range(0, len(content), MOCK_STREAM_CHUNK_SIZE):
+            await asyncio.sleep(MOCK_STREAM_DELAY_SECONDS)
+            yield content[start : start + MOCK_STREAM_CHUNK_SIZE]
 
 
 def create_llm_client(

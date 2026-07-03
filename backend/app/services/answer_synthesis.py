@@ -1,3 +1,6 @@
+from collections.abc import AsyncIterator
+from time import perf_counter
+
 from app.services.llm.client import LLMClient
 from app.services.llm.prompt_templates import build_prompt_messages
 from app.services.tools.dispatcher import DispatchedResults
@@ -51,6 +54,84 @@ async def build_answer(
             "falling back to deterministic template answer."
         )
         return _template_fallback(intent, results)
+
+
+async def stream_answer(
+    intent: str,
+    query: str,
+    results: DispatchedResults,
+    llm_client: LLMClient,
+    collector: ToolTraceCollector,
+) -> AsyncIterator[str]:
+    """Yield the LLM answer incrementally as chunks arrive.
+
+    Records the streaming call in the collector as ``llm_generate_stream``.
+    Falls back to the deterministic template answer in two cases:
+
+    1. The LLM fails before yielding anything → one-shot template as one
+       chunk, note added, status=error recorded.
+    2. The LLM fails mid-stream → whatever chunks already reached the
+       client stay; a truncation note is added, status=error recorded with
+       ``partial: True`` and the number of chunks that made it.
+    """
+    messages = build_prompt_messages(intent, query, results)
+    arguments = {
+        "backend": llm_client.backend_name,
+        "model": llm_client.model_name,
+        "n_messages": len(messages),
+    }
+
+    started_at = perf_counter()
+    chunks_yielded = 0
+    stream_error: str | None = None
+
+    try:
+        async for chunk in llm_client.stream_generate(messages):
+            chunks_yielded += 1
+            yield chunk
+    except Exception as exc:
+        stream_error = f"{type(exc).__name__}: {exc}"
+
+    latency_ms = max(0, int((perf_counter() - started_at) * 1000))
+
+    if stream_error is None:
+        collector.record_completed_tool(
+            "llm_generate_stream",
+            arguments,
+            status="success",
+            latency_ms=latency_ms,
+            result_summary={"chunks_yielded": chunks_yielded},
+        )
+        return
+
+    if chunks_yielded == 0:
+        collector.record_completed_tool(
+            "llm_generate_stream",
+            arguments,
+            status="error",
+            latency_ms=latency_ms,
+            error=stream_error,
+            result_summary={"chunks_yielded": 0},
+        )
+        collector.add_note(
+            f"LLM stream failed before any output ({stream_error}); "
+            "falling back to deterministic template answer."
+        )
+        yield _template_fallback(intent, results)
+        return
+
+    collector.record_completed_tool(
+        "llm_generate_stream",
+        arguments,
+        status="error",
+        latency_ms=latency_ms,
+        error=stream_error,
+        result_summary={"chunks_yielded": chunks_yielded, "partial": True},
+    )
+    collector.add_note(
+        f"LLM stream failed mid-response ({stream_error}); "
+        f"response is truncated after {chunks_yielded} chunk(s)."
+    )
 
 
 def _template_fallback(intent: str, results: DispatchedResults) -> str:

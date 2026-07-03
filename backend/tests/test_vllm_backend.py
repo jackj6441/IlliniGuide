@@ -222,6 +222,120 @@ async def test_generate_rejects_invalid_temperature() -> None:
         await client.generate(_messages(), temperature=3.0)
 
 
+def _sse_chunk(delta: str) -> bytes:
+    envelope = {
+        "choices": [
+            {"index": 0, "delta": {"content": delta}, "finish_reason": None}
+        ]
+    }
+    import json as _json
+
+    return f"data: {_json.dumps(envelope)}\n\n".encode()
+
+
+def _sse_role_only_chunk() -> bytes:
+    envelope = {
+        "choices": [
+            {"index": 0, "delta": {"role": "assistant"}, "finish_reason": None}
+        ]
+    }
+    import json as _json
+
+    return f"data: {_json.dumps(envelope)}\n\n".encode()
+
+
+def _sse_stream_body(deltas: list[str], include_role_prefix: bool = True) -> bytes:
+    parts: list[bytes] = []
+    if include_role_prefix:
+        parts.append(_sse_role_only_chunk())
+    parts.extend(_sse_chunk(delta) for delta in deltas)
+    parts.append(b"data: [DONE]\n\n")
+    return b"".join(parts)
+
+
+@pytest.mark.anyio
+async def test_stream_generate_yields_deltas_in_order() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        import json as _json
+
+        body = _json.loads(request.read().decode())
+        assert body["stream"] is True
+        return httpx.Response(
+            200,
+            content=_sse_stream_body(["Hi", " there", ", welcome!"]),
+            headers={"content-type": "text/event-stream"},
+        )
+
+    client = _client(handler)
+
+    chunks = [chunk async for chunk in client.stream_generate(_messages())]
+
+    assert chunks == ["Hi", " there", ", welcome!"]
+
+
+@pytest.mark.anyio
+async def test_stream_generate_skips_role_only_and_done_lines() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            content=_sse_stream_body(["only-content"], include_role_prefix=True),
+            headers={"content-type": "text/event-stream"},
+        )
+
+    client = _client(handler)
+
+    chunks = [chunk async for chunk in client.stream_generate(_messages())]
+
+    # Role-only prefix and terminal [DONE] must not surface as content
+    assert chunks == ["only-content"]
+
+
+@pytest.mark.anyio
+async def test_stream_generate_raises_on_5xx() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(503, text="upstream busy")
+
+    client = _client(handler)
+
+    with pytest.raises(VLLMServerError, match="503"):
+        async for _ in client.stream_generate(_messages()):
+            pass
+
+
+@pytest.mark.anyio
+async def test_stream_generate_raises_on_4xx() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(400, text="bad model")
+
+    client = _client(handler)
+
+    with pytest.raises(VLLMClientError, match="400"):
+        async for _ in client.stream_generate(_messages()):
+            pass
+
+
+@pytest.mark.anyio
+async def test_stream_generate_tolerates_malformed_json_line() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        # A mix of a good chunk, a garbage line, another good chunk, and [DONE]
+        body = (
+            b"data: not-json\n\n"
+            + _sse_chunk("A")
+            + b"data: {}\n\n"  # valid JSON but missing choices
+            + _sse_chunk("B")
+            + b"data: [DONE]\n\n"
+        )
+        return httpx.Response(
+            200, content=body, headers={"content-type": "text/event-stream"}
+        )
+
+    client = _client(handler)
+
+    chunks = [chunk async for chunk in client.stream_generate(_messages())]
+
+    assert chunks == ["A", "B"]
+
+
 @pytest.mark.anyio
 async def test_generate_raises_when_response_missing_content() -> None:
     def handler(request: httpx.Request) -> httpx.Response:

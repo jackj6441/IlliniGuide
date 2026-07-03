@@ -66,6 +66,7 @@ Start with the local MVP:
 | `/api/chat` LLM synthesis | Implemented | Per-intent prompt templates + async `build_answer` calling `LLMClient`. LLM errors record `status="error"` and fall back to deterministic template. `used_tools` ends with `llm_generate`. |
 | `vllm_remote` / `external_debug` backends | Implemented | `VLLMRemoteClient` (httpx.AsyncClient over `/v1/chat/completions`) with exponential-backoff retry on network/5xx, no retry on 4xx. Same class serves both backends; env resolution differs. |
 | vLLM launch on ICRN H200 | Implemented | Qwen2.5-7B-Instruct running self-hosted on ICRN H200 (141 GB VRAM). First measured: LLM call 231 ms wall, avg TTFT 506 ms over first 2 requests. `debug_trace.tool_calls[-1].arguments.backend == "vllm_remote"` on real `/api/chat`. |
+| Streaming `/api/chat/stream` | Implemented (backend) | SSE endpoint with content-then-metadata events. `LLMClient.stream_generate` on both mock and vLLM backends; graceful degradation to template on pre-first-chunk error, honest truncation on mid-stream error. Frontend `EventSource` client is Phase B. |
 | React frontend | Planned | Will start after backend skeleton and mocked APIs. |
 | Real RAG pipeline | Planned | pgvector retrieval, ingestion, embeddings, and fallback are not implemented yet. |
 | vLLM integration | Planned | Later Phase 1/2 serving work. |

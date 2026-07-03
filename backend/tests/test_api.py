@@ -1,3 +1,5 @@
+import json
+
 from fastapi.testclient import TestClient
 
 from app.db.session import get_db_session
@@ -152,6 +154,74 @@ def test_chat_prereq_check_routes_and_invokes_check_prerequisites() -> None:
     assert body["debug_trace"]["intent"] == "prereq_check"
     assert "check_prerequisites" in body["used_tools"]
     assert body["used_tools"][-1] == "llm_generate"
+
+
+def _parse_sse_events(text: str) -> list[dict | str]:
+    """Split an SSE stream into parsed event payloads.
+
+    Each event in the wire format is ``data: <payload>\\n\\n``. This helper
+    strips the framing and JSON-decodes any payload that is not the
+    ``[DONE]`` terminator.
+    """
+    events: list[dict | str] = []
+    for block in text.split("\n\n"):
+        block = block.strip()
+        if not block or not block.startswith("data:"):
+            continue
+        payload = block[len("data:") :].strip()
+        if payload == "[DONE]":
+            events.append("[DONE]")
+            continue
+        events.append(json.loads(payload))
+    return events
+
+
+def test_chat_stream_yields_content_metadata_and_done() -> None:
+    with client.stream(
+        "POST",
+        "/api/chat/stream",
+        json={"message": "What is ECE 391 about?", "debug": True},
+    ) as response:
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/event-stream")
+        body = response.read().decode()
+
+    events = _parse_sse_events(body)
+
+    # Structure: N content events, one metadata event, one [DONE] marker
+    assert events[-1] == "[DONE]"
+    assert events[-2]["type"] == "metadata"
+
+    content_events = [e for e in events[:-2] if isinstance(e, dict)]
+    assert content_events, "must emit at least one content event"
+    assert all(e["type"] == "content" for e in content_events)
+    assert all("delta" in e for e in content_events)
+
+    metadata = events[-2]
+    # Mock LLM prefix confirms the stream came out of the LLM path
+    concatenated = "".join(e["delta"] for e in content_events)
+    assert "[mock stream backend=" in concatenated
+    assert metadata["used_tools"][-1] == "llm_generate_stream"
+    assert metadata["citations"]
+    assert metadata["citations"][0]["course_id"] == "ECE 391"
+    assert isinstance(metadata["latency_ms"], int)
+    assert "debug_trace" in metadata
+    assert metadata["debug_trace"]["intent"] == "course_qa"
+
+
+def test_chat_stream_omits_debug_trace_when_debug_flag_is_false() -> None:
+    with client.stream(
+        "POST",
+        "/api/chat/stream",
+        json={"message": "What is ECE 391 about?"},
+    ) as response:
+        body = response.read().decode()
+
+    events = _parse_sse_events(body)
+    metadata = events[-2]
+
+    assert "debug_trace" not in metadata
+    assert metadata["used_tools"]  # still populated
 
 
 def test_compare_requires_at_least_two_courses() -> None:

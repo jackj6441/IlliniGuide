@@ -64,6 +64,34 @@ class ToolTraceCollector:
                 result_summary=span._result_summary,
             )
 
+    def record_completed_tool(
+        self,
+        tool_name: str,
+        arguments: dict[str, Any],
+        *,
+        status: str,
+        latency_ms: int,
+        result_summary: dict[str, Any] | None = None,
+        error: str | None = None,
+    ) -> None:
+        """Record a tool call whose timing was measured externally.
+
+        Prefer ``time_tool`` when the operation is a single awaited call —
+        it makes exception handling automatic. Use this method for streaming
+        or other async iteration where wrapping in a context manager would
+        interfere with generator control flow.
+        """
+        self._tool_calls.append(
+            ToolCallTrace(
+                tool_name=tool_name,
+                arguments=dict(arguments),
+                status=status,
+                latency_ms=max(0, latency_ms),
+                error=error,
+                result_summary=dict(result_summary or {}),
+            )
+        )
+
     def record_skipped_tool(
         self, tool_name: str, arguments: dict[str, Any], reason: str
     ) -> None:
