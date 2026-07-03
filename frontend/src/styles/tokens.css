@@ -1,0 +1,46 @@
+:root {
+  /* Colors — cool grays + UIUC orange as the single accent */
+  --bg: #0b0d10;
+  --bg-elevated: #14171c;
+  --bg-hover: #1a1e24;
+  --border: #23272e;
+  --border-strong: #2d323a;
+  --text: #e5e7eb;
+  --text-muted: #9ca3af;
+  --text-dim: #6b7280;
+  --accent: #e84a27;         /* UIUC orange */
+  --accent-hover: #f26a4b;
+  --success: #10b981;
+  --error: #ef4444;
+
+  /* Typography */
+  --font-body:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono:
+    ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", monospace;
+
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-base: 14px;
+  --fs-md: 15px;
+  --fs-lg: 18px;
+  --fs-xl: 22px;
+
+  /* Spacing (4px system) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 10px;
+
+  /* Layout */
+  --sidebar-width: 220px;
+}

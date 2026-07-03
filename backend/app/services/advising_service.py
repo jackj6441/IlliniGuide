@@ -130,10 +130,24 @@ def _citation_from_doc(doc: RetrievedDoc) -> Citation:
     )
 
 
-def build_mock_compare_response(
+def build_compare_response(
     request: CompareRequest,
-    db_session: Session | None = None,
+    db_session: Session,
 ) -> CompareResponse:
+    """Run compare_courses tool and shape the result for the compare endpoint.
+
+    The route is a direct endpoint (no router/LLM), so we call the tool
+    inline rather than through the plan/dispatcher used by /api/chat.
+    Citations come from the same keyword retriever the chat pipeline uses.
+    """
+    from app.services.tools.compare_tools import compare_courses
+
+    comparison = compare_courses(
+        db_session,
+        request.course_ids,
+        dimension=request.dimension,
+    )
+
     query = f"Compare {' '.join(request.course_ids)} {request.dimension or ''}".strip()
     retrieved_chunks = _search_docs(
         query,
@@ -142,56 +156,106 @@ def build_mock_compare_response(
         top_k=5,
     )
     citations = [citation_from_chunk(chunk) for chunk in retrieved_chunks]
+
     courses = [
         CourseSummary(
-            course_id=course_id,
-            title=f"Mock profile for {course_id}",
-            notes=[
-                "TODO: replace with structured course profile.",
-                "TODO: add retrieved evidence and GPA/prerequisite signals.",
-            ],
+            course_id=item.course_id,
+            title=item.title or item.course_id,
+            notes=item.notes,
         )
-        for course_id in request.course_ids
+        for item in comparison.courses
     ]
+
+    dimension_str = comparison.dimension or "not specified"
+    found_ids = [item.course_id for item in comparison.courses]
+    if found_ids:
+        summary = (
+            f"Compared {', '.join(found_ids)} on dimension: {dimension_str}."
+        )
+    else:
+        summary = (
+            "No structured profiles were found for the requested courses. "
+            "Comparison is empty."
+        )
+
     return CompareResponse(
-        summary=(
-            "This is a mocked course comparison. TODO: replace with compare_courses tool output "
-            "and citation-grounded synthesis."
-        ),
+        summary=summary,
         courses=courses,
         comparison={
-            "dimension": request.dimension,
-            "status": "mocked",
+            "course_ids": comparison.course_ids,
+            "dimension": comparison.dimension,
+            "courses": [
+                {
+                    "course_id": item.course_id,
+                    "title": item.title,
+                    "career_tags": item.career_tags,
+                    "direction_match": item.direction_match,
+                    "average_gpa": item.average_gpa,
+                    "prerequisite_readiness": item.prerequisite_readiness,
+                    "missing_prerequisites": item.missing_prerequisites,
+                    "notes": item.notes,
+                }
+                for item in comparison.courses
+            ],
+            "notes": comparison.notes,
         },
         citations=citations,
     )
 
 
-def build_mock_recommend_response(request: RecommendRequest) -> RecommendResponse:
-    recommendation = Recommendation(
-        course_id="ECE 408",
-        title="Applied Parallel Programming",
-        reason=(
-            "Mock recommendation for the requested direction. TODO: replace with direction_match, "
-            "prerequisite_readiness, GPA risk, and course progression scoring."
-        ),
-        citations=[],
+def build_recommend_response(
+    request: RecommendRequest,
+    db_session: Session,
+) -> RecommendResponse:
+    """Run recommend_courses tool and shape the result for the recommend endpoint."""
+    from app.services.tools.recommend_tools import recommend_courses
+
+    recs = recommend_courses(
+        db_session,
+        request.target_direction,
+        completed_courses=request.completed_courses,
+        max_results=request.max_results,
     )
+
+    recommendations = [
+        Recommendation(
+            course_id=rec.course_id,
+            title=rec.title,
+            reason=_format_reason(rec.reason_codes, rec.notes),
+            citations=[],
+        )
+        for rec in recs.recommendations
+    ]
+
     debug_scores = None
     if request.debug:
         debug_scores = [
             {
-                "course_id": recommendation.course_id,
-                "score": 0.0,
-                "status": "mocked",
-                "target_direction": request.target_direction,
-                "completed_courses": request.completed_courses,
+                "course_id": rec.course_id,
+                "title": rec.title,
+                "score": rec.score,
+                "score_breakdown": rec.score_breakdown,
+                "reason_codes": rec.reason_codes,
+                "target_direction": recs.target_direction,
+                "completed_courses": recs.completed_courses,
             }
+            for rec in recs.recommendations
         ]
+
     return RecommendResponse(
-        recommendations=[recommendation],
+        recommendations=recommendations,
         debug_scores=debug_scores,
     )
+
+
+def _format_reason(reason_codes: list[str], notes: list[str]) -> str:
+    """Human-readable explanation built from structured signals."""
+    parts: list[str] = []
+    if reason_codes:
+        parts.append("Signals: " + ", ".join(reason_codes) + ".")
+    if notes:
+        parts.append(" ".join(notes))
+    return " ".join(parts) or "No structured signals available."
 
 
 def _search_docs(

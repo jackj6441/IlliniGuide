@@ -233,7 +233,7 @@ def test_compare_requires_at_least_two_courses() -> None:
     assert response.status_code == 422
 
 
-def test_compare_returns_mock_response_shape() -> None:
+def test_compare_returns_real_tool_shape() -> None:
     response = client.post(
         "/api/compare",
         json={"course_ids": ["ECE 408", "CS 433"], "dimension": "ai_infra"},
@@ -242,11 +242,17 @@ def test_compare_returns_mock_response_shape() -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["summary"]
-    assert len(body["courses"]) == 2
-    assert body["comparison"]["status"] == "mocked"
+    # With the empty fake session, compare_courses returns 0 courses and
+    # notes explaining nothing was found. Shape must still be valid.
+    assert isinstance(body["courses"], list)
+    comparison = body["comparison"]
+    assert comparison["course_ids"] == ["ECE 408", "CS 433"]
+    assert comparison["dimension"] == "ai_infra"
+    assert isinstance(comparison["courses"], list)
+    assert isinstance(comparison["notes"], list)
 
 
-def test_recommend_returns_mock_response_shape() -> None:
+def test_recommend_returns_real_tool_shape() -> None:
     response = client.post(
         "/api/recommend",
         json={
@@ -259,5 +265,23 @@ def test_recommend_returns_mock_response_shape() -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert body["recommendations"]
-    assert body["debug_scores"][0]["status"] == "mocked"
+    # Empty fake DB → no candidates → empty recommendations list; still a
+    # well-formed response and (with debug=True) an empty debug_scores list.
+    assert isinstance(body["recommendations"], list)
+    assert body["debug_scores"] == []
+
+
+def test_recommend_debug_scores_absent_when_debug_false() -> None:
+    response = client.post(
+        "/api/recommend",
+        json={
+            "target_direction": "ai_infra",
+            "completed_courses": [],
+            "max_results": 3,
+            "debug": False,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["debug_scores"] is None

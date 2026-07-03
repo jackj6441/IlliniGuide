@@ -1,0 +1,65 @@
+.empty {
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+  padding: var(--sp-2) 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.courseId {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px var(--sp-2);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+
+.sourceName {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.snippet {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.link {
+  align-self: flex-start;
+  font-size: var(--fs-xs);
+  color: var(--accent);
+  transition: color 120ms ease;
+}
+
+.link:hover {
+  color: var(--accent-hover);
+}

@@ -1,0 +1,69 @@
+.form {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  transition: border-color 120ms ease;
+}
+
+.form:focus-within {
+  border-color: var(--border-strong);
+}
+
+.textarea {
+  flex: 1;
+  resize: none;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--text);
+  font-size: var(--fs-base);
+  line-height: 1.55;
+  min-height: 24px;
+  max-height: 160px;
+  padding: var(--sp-2) var(--sp-2);
+  font-family: var(--font-body);
+}
+
+.textarea::placeholder {
+  color: var(--text-dim);
+}
+
+.textarea:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.button {
+  height: 34px;
+  padding: 0 var(--sp-4);
+  background: var(--accent);
+  color: white;
+  border-radius: var(--radius);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  transition: background 120ms ease, opacity 120ms ease;
+  flex-shrink: 0;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.buttonStop {
+  background: var(--bg-hover);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+}
+
+.buttonStop:hover {
+  background: var(--border);
+}

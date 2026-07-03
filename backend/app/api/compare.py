@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db_session
 from app.schemas import CompareRequest, CompareResponse
-from app.services.advising_service import build_mock_compare_response
+from app.services.advising_service import build_compare_response
 
 router = APIRouter(prefix="/api", tags=["compare"])
 
@@ -14,4 +14,4 @@ async def compare(
     request: CompareRequest,
     db_session: Session = Depends(get_db_session),
 ) -> CompareResponse:
-    return build_mock_compare_response(request, db_session)
+    return build_compare_response(request, db_session)
