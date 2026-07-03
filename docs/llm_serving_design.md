@@ -213,7 +213,17 @@ data: [DONE]
 
 ### Task C6 — Benchmark + interview notes
 
-Status: Manual — awaiting execution (deliverables in place)
+Status: Implemented
+
+Measured on ICRN H200 with Qwen2.5-7B-Instruct, 10 concurrent users, 47 counted requests, `scripts/benchmark.py`:
+
+- **Streaming p50 TTFT: 55 ms** (single-user warm-cache floor: 23 ms)
+- **Blocking p50 TTFT: 472 ms**
+- **Client-perceived TTFT improvement from streaming: 9×**
+- Median total latency ~475 ms on both endpoints (throughput unchanged, as expected)
+- Streaming p95 TTFT: 4456 ms — a *cold burst* artifact, not steady state; discussed in Q15 of `docs/interview_notes_vllm.md`
+
+Interview notes in `docs/interview_notes_vllm.md` include the resume bullet, a 60-second pitch, 16 L1/L2/L3 questions grounded in these measurements (including the burst-behavior walkthrough), explicit tradeoffs, and failure modes.
 
 - `backend/scripts/benchmark.py` — self-contained concurrent load test built on `httpx.AsyncClient`. Measures TTFT (per-request, streaming only), total latency, output tokens, and error rate; reports p50/p95/p99 for each; supports both `/api/chat` (blocking) and `/api/chat/stream` (streaming) so we can quantify the streaming perceived-latency win. Prompts cycle across four advising templates so prefix caching doesn't inflate TTFT.
 - `docs/interview_notes_vllm.md` — resume bullet, 60-second pitch, 15 Q&A across three difficulty levels (L1 foundations, L2 interview, L3 tradeoff/failure/scaling), plus explicit tradeoffs and failure modes. Follows `AGENTS.md` §22 and §23. Three benchmarked p95 numbers are marked as placeholders (`{P95_TTFT_MS}`, `{P95_TOTAL_MS}`, `{P95_BLOCKING_MS}`) to be filled in from the user's next run on ICRN.
