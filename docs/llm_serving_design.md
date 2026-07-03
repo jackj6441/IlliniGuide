@@ -148,7 +148,21 @@ Status: Implemented
 
 ### Task C4 — Launch vLLM on ICRN H200 + smoke test
 
-Status: Manual — awaiting execution
+Status: Implemented
+
+First real self-hosted inference measurements (Qwen2.5-7B-Instruct on ICRN H200, cold-cache, single-request):
+
+- LLM call latency (wall): 231 ms
+- Prompt tokens: 99, completion tokens: 18
+- Average TTFT over first 2 requests: 506 ms
+- `debug_trace.tool_calls[-1].arguments.backend == "vllm_remote"` — confirmed the request path is fully self-hosted, no external API.
+
+Notes and gotchas discovered during the first ICRN run (folded back into `docs/vllm_setup.md` troubleshooting):
+
+- Default `pip install vllm` pulled a version compiled against CUDA 13; ICRN driver caps at CUDA 12.8. Fix: pin `vllm<0.20` so pip picks a wheel linked against a CUDA 12.x runtime that the driver can load.
+- `pip install torch` alone can pull a wheel built for a CUDA newer than the driver supports. Fix: install PyTorch with the CUDA-specific index (`--index-url https://download.pytorch.org/whl/cu128`) matching the driver's CUDA capability.
+- A few Prometheus metric names differ across vLLM versions; the snapshot script tolerates missing metrics rather than crashing.
+- Postgres is not running on ICRN by default. On the first end-to-end test, `get_course_profile` and `search_course_docs` failed with `psycopg.OperationalError`. The dispatcher's per-tool error isolation held: the request did not 500; the LLM was invoked with empty evidence; the grounding constraint in the system prompt made the model respond honestly with "insufficient information" instead of hallucinating. Wiring Postgres on ICRN (or switching to a local SQLite-shaped alternative for demo) is a separate task, not a C4 blocker.
 
 Target machine: **ICRN H200** (141 GB VRAM, free to UIUC students via https://jupyter.ncsa.illinois.edu/). Full step-by-step manual lives in `docs/vllm_setup.md`.
 

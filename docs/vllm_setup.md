@@ -299,6 +299,38 @@ Your JupyterLab session did not get a real GPU. Either:
 - You picked the CPU-only environment by accident → go back to Step 0 and pick H200.
 - The H200 pool was full → the environment might have silently given you CPU. Confirm with `nvidia-smi`.
 
+### `torch.cuda.is_available()` fails with "NVIDIA driver on your system is too old (found version 12080)"
+
+The default `pip install torch` pulled a PyTorch wheel compiled for a newer CUDA than the ICRN driver supports (max CUDA 12.8). Fix by installing the CUDA-12.8-specific wheel:
+
+```bash
+pip uninstall -y torch torchvision torchaudio
+pip install torch --index-url https://download.pytorch.org/whl/cu128
+```
+
+CUDA is only forward-compatible: an older driver cannot load a newer CUDA runtime. This is why matching the wheel to the driver's max CUDA is required, not just the CUDA runtime toolkit.
+
+### `import vllm` fails with `libcudart.so.13: cannot open shared object file`
+
+The default `pip install vllm` pulled a version compiled against the CUDA 13 runtime. ICRN driver supports up to CUDA 12.8 only. Fix by pinning vLLM to a version whose compiled extensions link against a CUDA 12.x runtime:
+
+```bash
+pip uninstall -y vllm
+pip install "vllm<0.20"
+```
+
+Verify:
+
+```bash
+python -c "import vllm; print(vllm.__version__)"
+```
+
+You should see a `0.11.x`–`0.19.x` version number and no `ImportError`.
+
+### Some metrics show `(not reported by this vLLM build)` in the snapshot
+
+The Prometheus metric names inside vLLM shift between minor releases (e.g., `gpu_cache_usage_perc` may be renamed or scoped differently). The snapshot script tolerates missing keys instead of crashing. As long as `prefill tokens (total)`, `decode tokens (total)`, `TTFT (cumulative sum)`, and `TTFT (sample count)` are reported, the core concepts (prefill/decode split and TTFT) are still visible.
+
 ### `vllm serve` says `OSError: We couldn't connect to https://huggingface.co ...`
 
 Rare on ICRN but possible if outbound HuggingFace is blocked. Try downloading the model with a token first:

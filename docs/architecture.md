@@ -51,6 +51,7 @@ This document tracks the architecture as it becomes implemented. It must disting
 - `services/llm/prompt_templates.py`: per-intent system prompts and user-prompt builders that serialize `DispatchedResults` into evidence blocks.
 - `services/answer_synthesis.build_answer` is now async: it calls the injected `LLMClient` and, on failure, records `status="error"` in the trace and returns a deterministic template answer (graceful degradation). `advising_service.build_chat_response` is async and constructs the LLM client via the factory when the caller does not inject one.
 - `services/llm/vllm_backend.py`: `VLLMRemoteClient` — OpenAI-compatible HTTP client (`httpx.AsyncClient` over `/v1/chat/completions`) with exponential-backoff retry (network + 5xx only) and typed errors (`VLLMServerError` retriable, `VLLMClientError` never retried). One class serves both `vllm_remote` and `external_debug` backends; the factory resolves env differently for each.
+- Self-hosted vLLM running on ICRN H200 with `Qwen2.5-7B-Instruct`. First smoke test measured 231 ms LLM call latency and 506 ms avg TTFT. See `docs/vllm_setup.md` for launch details; `scripts/verify_vllm.py` and `scripts/vllm_metrics_snapshot.py` are one-command diagnostics.
 
 ## Planned
 

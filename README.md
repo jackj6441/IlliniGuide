@@ -14,6 +14,7 @@ The project is framed as an AI infrastructure and LLM serving system, not a simp
 - [docs/tool_calling_design.md](docs/tool_calling_design.md): current structured tool design and planned tool router.
 - [docs/llm_serving_design.md](docs/llm_serving_design.md): LLM client abstraction, vLLM concepts, and Phase C roadmap.
 - [docs/vllm_setup.md](docs/vllm_setup.md): step-by-step manual for launching vLLM on the ICRN H200 and wiring the backend to it.
+- [docs/postgres_icrn_setup.md](docs/postgres_icrn_setup.md): step-by-step manual for installing PostgreSQL + pgvector on ICRN via conda (no docker, no sudo), initializing tables, and ingesting real UIUC data.
 - [docs/demo_script.md](docs/demo_script.md): demo flow, with implementation status tracked honestly.
 
 ## Target Stack
@@ -64,10 +65,29 @@ Start with the local MVP:
 | LLM client abstraction | Implemented | `services/llm/` — `LLMClient` Protocol, `MockLLMClient` (deterministic), `create_llm_client()` factory reading `LLM_BACKEND` env. `vllm_remote` / `external_debug` backends planned (Task C3). |
 | `/api/chat` LLM synthesis | Implemented | Per-intent prompt templates + async `build_answer` calling `LLMClient`. LLM errors record `status="error"` and fall back to deterministic template. `used_tools` ends with `llm_generate`. |
 | `vllm_remote` / `external_debug` backends | Implemented | `VLLMRemoteClient` (httpx.AsyncClient over `/v1/chat/completions`) with exponential-backoff retry on network/5xx, no retry on 4xx. Same class serves both backends; env resolution differs. |
-| vLLM launch on ICRN H200 | Manual — awaiting execution | Follow `docs/vllm_setup.md`. Target model: `Qwen2.5-7B-Instruct`. Helper scripts: `scripts/verify_vllm.py` (smoke test), `scripts/vllm_metrics_snapshot.py` (KV cache / TTFT snapshot from `/metrics`). |
+| vLLM launch on ICRN H200 | Implemented | Qwen2.5-7B-Instruct running self-hosted on ICRN H200 (141 GB VRAM). First measured: LLM call 231 ms wall, avg TTFT 506 ms over first 2 requests. `debug_trace.tool_calls[-1].arguments.backend == "vllm_remote"` on real `/api/chat`. |
 | React frontend | Planned | Will start after backend skeleton and mocked APIs. |
 | Real RAG pipeline | Planned | pgvector retrieval, ingestion, embeddings, and fallback are not implemented yet. |
 | vLLM integration | Planned | Later Phase 1/2 serving work. |
+
+## Running the Whole Stack on ICRN (One Command)
+
+After the one-time setup in `docs/postgres_icrn_setup.md` and `docs/vllm_setup.md`:
+
+```bash
+cd ~/IlliniGuide
+bash scripts/dev_up.sh
+```
+
+That script starts PostgreSQL, vLLM (Qwen2.5-7B-Instruct), and the FastAPI backend in the right order, waits for each to be ready before starting the next, and streams each service's logs to `/tmp/*.log`. All three run in the background from a single terminal.
+
+Stop everything with:
+
+```bash
+bash scripts/dev_down.sh
+```
+
+Logs live at `/tmp/vllm.log`, `/tmp/backend.log`, and `$PGDATA/server.log`. `tail -f` each to watch a specific service.
 
 ## Local Development
 
