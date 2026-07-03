@@ -213,9 +213,12 @@ data: [DONE]
 
 ### Task C6 — Benchmark + interview notes
 
-Status: Planned
+Status: Manual — awaiting execution (deliverables in place)
 
-Run a 10-concurrency load test on the H100 vLLM deployment; record TTFT / p95 total latency / tokens_per_sec. Publish `docs/interview_notes_vllm.md` with L1/L2/L3 Q&A per `AGENTS.md` §22.
+- `backend/scripts/benchmark.py` — self-contained concurrent load test built on `httpx.AsyncClient`. Measures TTFT (per-request, streaming only), total latency, output tokens, and error rate; reports p50/p95/p99 for each; supports both `/api/chat` (blocking) and `/api/chat/stream` (streaming) so we can quantify the streaming perceived-latency win. Prompts cycle across four advising templates so prefix caching doesn't inflate TTFT.
+- `docs/interview_notes_vllm.md` — resume bullet, 60-second pitch, 15 Q&A across three difficulty levels (L1 foundations, L2 interview, L3 tradeoff/failure/scaling), plus explicit tradeoffs and failure modes. Follows `AGENTS.md` §22 and §23. Three benchmarked p95 numbers are marked as placeholders (`{P95_TTFT_MS}`, `{P95_TOTAL_MS}`, `{P95_BLOCKING_MS}`) to be filled in from the user's next run on ICRN.
+
+DoD: three benchmark runs on ICRN (`--concurrency 1 --total-requests 5`, `--concurrency 10 --total-requests 50` on both stream and chat endpoints); paste output into this doc and interview notes; flip status to Implemented.
 
 ## 6. Non-Goals
 

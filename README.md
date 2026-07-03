@@ -15,6 +15,7 @@ The project is framed as an AI infrastructure and LLM serving system, not a simp
 - [docs/llm_serving_design.md](docs/llm_serving_design.md): LLM client abstraction, vLLM concepts, and Phase C roadmap.
 - [docs/vllm_setup.md](docs/vllm_setup.md): step-by-step manual for launching vLLM on the ICRN H200 and wiring the backend to it.
 - [docs/postgres_icrn_setup.md](docs/postgres_icrn_setup.md): step-by-step manual for installing PostgreSQL + pgvector on ICRN via conda (no docker, no sudo), initializing tables, and ingesting real UIUC data.
+- [docs/interview_notes_vllm.md](docs/interview_notes_vllm.md): resume bullet, 60-second pitch, and three-level Q&A for the LLM serving portion. Numbers filled from `scripts/benchmark.py`.
 - [docs/demo_script.md](docs/demo_script.md): demo flow, with implementation status tracked honestly.
 
 ## Target Stack
@@ -67,6 +68,7 @@ Start with the local MVP:
 | `vllm_remote` / `external_debug` backends | Implemented | `VLLMRemoteClient` (httpx.AsyncClient over `/v1/chat/completions`) with exponential-backoff retry on network/5xx, no retry on 4xx. Same class serves both backends; env resolution differs. |
 | vLLM launch on ICRN H200 | Implemented | Qwen2.5-7B-Instruct running self-hosted on ICRN H200 (141 GB VRAM). First measured: LLM call 231 ms wall, avg TTFT 506 ms over first 2 requests. `debug_trace.tool_calls[-1].arguments.backend == "vllm_remote"` on real `/api/chat`. |
 | Streaming `/api/chat/stream` | Implemented (backend) | SSE endpoint with content-then-metadata events. `LLMClient.stream_generate` on both mock and vLLM backends; graceful degradation to template on pre-first-chunk error, honest truncation on mid-stream error. Frontend `EventSource` client is Phase B. |
+| Benchmark harness + interview notes | Manual — awaiting execution | `scripts/benchmark.py` reports per-request TTFT (streaming) vs total latency and p50/p95/p99 across both chat endpoints under configurable concurrency; `docs/interview_notes_vllm.md` holds the resume bullet, 60-sec pitch, and 15 Q&A (numbers filled in from actual ICRN runs). |
 | React frontend | Planned | Will start after backend skeleton and mocked APIs. |
 | Real RAG pipeline | Planned | pgvector retrieval, ingestion, embeddings, and fallback are not implemented yet. |
 | vLLM integration | Planned | Later Phase 1/2 serving work. |
