@@ -7,6 +7,9 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
+EMBEDDING_DIMENSION = 384
+
+
 class Base(DeclarativeBase):
     pass
 
@@ -63,7 +66,7 @@ class CourseChunk(Base):
     section_type: Mapped[str | None] = mapped_column(Text)
     chunk_text: Mapped[str] = mapped_column(Text, nullable=False)
     metadata_: Mapped[dict[str, Any] | None] = mapped_column("metadata", JSONB)
-    embedding: Mapped[list[float] | None] = mapped_column(Vector)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBEDDING_DIMENSION))
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     course: Mapped[Course | None] = relationship(
@@ -109,4 +112,5 @@ __all__ = [
     "CourseChunk",
     "EvalRun",
     "EvalResult",
+    "EMBEDDING_DIMENSION",
 ]

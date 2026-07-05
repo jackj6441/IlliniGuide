@@ -1,7 +1,12 @@
 from sqlalchemy.orm import Session
 
+from app.services.rag.embeddings import (
+    EmbeddingClient,
+    get_default_embedding_client,
+)
 from app.services.rag.normalize import normalize_course_id
-from app.services.rag.retriever import RetrievedChunk, search_course_docs_from_db
+from app.services.rag.pgvector_retriever import hybrid_search
+from app.services.rag.retriever import RetrievedChunk
 from app.services.tools.schemas import (
     RetrievedDoc,
     SearchCourseDocsRequest,
@@ -17,6 +22,8 @@ SAMPLE_FALLBACK_SOURCE_NAME = "Mock Course Dataset"
 def search_course_docs(
     session: Session,
     request: SearchCourseDocsRequest,
+    *,
+    embedding_client: EmbeddingClient | None = None,
 ) -> SearchCourseDocsResult:
     query = request.query.strip()
     if not query:
@@ -36,15 +43,17 @@ def search_course_docs(
                 seen.add(normalized)
                 normalized_course_ids.append(normalized)
 
-    chunks = search_course_docs_from_db(
+    client = embedding_client or get_default_embedding_client()
+    chunks, retrieval_notes = hybrid_search(
         session,
         query,
+        client,
         course_ids=normalized_course_ids or None,
         top_k=request.top_k,
     )
 
     docs = [_chunk_to_doc(chunk) for chunk in chunks]
-    notes = _build_notes(chunks)
+    notes = retrieval_notes + _build_notes(chunks)
 
     return SearchCourseDocsResult(
         query=query,

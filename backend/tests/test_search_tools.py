@@ -1,5 +1,7 @@
 import pytest
 
+from app.services.rag.embeddings import MockEmbeddingClient
+from app.services.rag.retriever import RetrievedChunk
 from app.services.tools.schemas import SearchCourseDocsRequest
 from app.services.tools.search_tools import search_course_docs
 
@@ -25,12 +27,31 @@ class FakeScalars:
         return list(self._courses)
 
 
+class FakeExecuteResult:
+    def __init__(self, rows):
+        self._rows = rows
+
+    def all(self):
+        return list(self._rows)
+
+
 class FakeSession:
-    def __init__(self, courses):
+    """FakeSession supports both keyword (scalars) and semantic (execute) paths.
+
+    ``semantic_rows`` are ``(CourseChunk, distance)`` tuples returned by
+    ``execute(...).all()``. Empty by default so tests without explicit
+    semantic data fall through to the keyword branch (matching pre-D5 behaviour).
+    """
+
+    def __init__(self, courses, *, semantic_rows=None):
         self._courses = courses
+        self._semantic_rows = list(semantic_rows or [])
 
     def scalars(self, statement):
         return FakeScalars(self._courses)
+
+    def execute(self, statement):
+        return FakeExecuteResult(self._semantic_rows)
 
 
 def test_happy_path_returns_ranked_docs_from_db() -> None:
@@ -111,3 +132,80 @@ def test_no_match_returns_empty_docs_with_note() -> None:
     assert result.notes == [
         "No evidence found in course database or sample chunks.",
     ]
+
+
+def _make_chunk_row(course_id: str, section_type: str = "overview", text: str = "text"):
+    from app.db.models import CourseChunk
+
+    return CourseChunk(
+        course_id=course_id,
+        source_name="UIUC Course Catalog",
+        source_url=f"https://courses.illinois.edu/{course_id.replace(' ', '')}",
+        section_type=section_type,
+        chunk_text=text,
+    )
+
+
+def test_semantic_hit_high_confidence_produces_no_confidence_note() -> None:
+    row = _make_chunk_row("ECE 391", "overview", "Systems programming.")
+    session = FakeSession([], semantic_rows=[(row, 0.1)])  # similarity=0.9
+    request = SearchCourseDocsRequest(query="systems programming", top_k=3)
+
+    result = search_course_docs(
+        session, request, embedding_client=MockEmbeddingClient()
+    )
+
+    assert result.docs[0].course_id == "ECE 391"
+    assert result.docs[0].source_name == "UIUC Course Catalog"
+    assert result.notes == []
+
+
+def test_semantic_hit_low_confidence_appends_note() -> None:
+    row = _make_chunk_row("ECE 391", "overview", "Systems programming.")
+    session = FakeSession([], semantic_rows=[(row, 0.85)])  # similarity=0.15
+    request = SearchCourseDocsRequest(query="something obscure", top_k=3)
+
+    result = search_course_docs(
+        session, request, embedding_client=MockEmbeddingClient()
+    )
+
+    assert len(result.docs) == 1
+    assert result.notes
+    assert "confidence low" in result.notes[0].lower()
+    assert "0.15" in result.notes[0]
+
+
+def test_semantic_empty_falls_back_to_keyword_silently() -> None:
+    session = FakeSession(
+        [_make_course()], semantic_rows=[]
+    )
+    request = SearchCourseDocsRequest(
+        query="What is ECE 408 about GPU programming?", top_k=3
+    )
+
+    result = search_course_docs(
+        session, request, embedding_client=MockEmbeddingClient()
+    )
+
+    # No "fallback" note; behaves like the pre-D5 keyword path.
+    assert result.docs
+    assert result.docs[0].course_id == "ECE 408"
+    assert all("confidence" not in n.lower() for n in result.notes)
+
+
+def test_embedding_client_defaults_when_omitted(monkeypatch) -> None:
+    """When caller passes no client, we resolve one via the module singleton."""
+    from app.services.rag import embeddings as emb_module
+
+    sentinel = MockEmbeddingClient(model_name="sentinel-embedding")
+    monkeypatch.setattr(emb_module, "_default_client", sentinel)
+
+    session = FakeSession([_make_course()])
+    request = SearchCourseDocsRequest(
+        query="What is ECE 408 about GPU programming?", top_k=3
+    )
+
+    # No embedding_client passed; should resolve to `sentinel` and not crash.
+    result = search_course_docs(session, request)
+
+    assert result.docs

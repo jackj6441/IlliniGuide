@@ -14,16 +14,20 @@ class _EmptyScalars:
 class _EmptyFakeSession:
     """Minimal session stand-in used across API tests.
 
-    Real tools receive this session; scalar/scalars return empty results so
-    DB-backed lookups produce None/empty output but do not crash. The
-    ``search_course_docs`` tool then falls back to in-memory sample chunks,
-    which keeps citation shape stable in tests without a real Postgres.
+    Real tools receive this session; scalar/scalars/execute return empty
+    results so DB-backed lookups produce None/empty output but do not crash.
+    The ``search_course_docs`` tool then falls back to the keyword retriever
+    (also empty here) and finally to in-memory sample chunks, which keeps
+    citation shape stable in tests without a real Postgres.
     """
 
     def scalar(self, statement):
         return None
 
     def scalars(self, statement):
+        return _EmptyScalars()
+
+    def execute(self, statement):
         return _EmptyScalars()
 
 
