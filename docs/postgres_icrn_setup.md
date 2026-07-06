@@ -71,10 +71,16 @@ postgres --version
 
 ## Step 2 — Initialize a Postgres data directory
 
-Postgres stores everything (data, config, WAL logs) in a **data directory**. We put ours under our home directory, so no root/system config is touched.
+Postgres stores everything (data, config, WAL logs) in a **data directory**.
+
+> **ICRN gotcha — don't use `$HOME/pgdata`.** ICRN's JupyterHub mounts `$HOME` over NFS with UID squashing, so any directory you `mkdir` under `$HOME` ends up owned by `nobody(65534)` instead of your real UID. `initdb` refuses to write into a directory it doesn't own and fails with `FATAL: data directory has wrong ownership`. Use `/tmp/jackj6_pgdata` instead — `/tmp` is on local disk with the correct UID.
+>
+> **Trade-off**: `/tmp` is wiped when your ICRN session ends (~24 h), so you'll re-run `initdb` + the ingestion scripts next time. See the "Session hygiene" section for the resume recipe.
 
 ```bash
-export PGDATA=$HOME/pgdata
+export PGDATA=/tmp/jackj6_pgdata
+mkdir -p $PGDATA
+chmod 700 $PGDATA
 initdb -D $PGDATA --username=illiniguideserve --pwfile=<(echo "illiniguideserve")
 ```
 
@@ -90,7 +96,7 @@ initdb -D $PGDATA --username=illiniguideserve --pwfile=<(echo "illiniguideserve"
 
 ```
 Success. You can now start the database server using:
-    pg_ctl -D /home/jackj6/pgdata -l logfile start
+    pg_ctl -D /tmp/jackj6_pgdata -l logfile start
 ```
 
 ---
@@ -280,22 +286,43 @@ Then I'll flip Task A to done in project docs and we start C5 (streaming).
 
 ## Session hygiene (important for ICRN)
 
-ICRN sessions time out at 24 h and long-running Postgres processes stop when your session dies. When you come back tomorrow, before running anything:
+ICRN sessions time out at ~24 h. **`/tmp/jackj6_pgdata` does NOT survive across sessions** — /tmp is cleared, so every fresh JupyterHub session is a clean slate. When you come back tomorrow:
 
 ```bash
-# Terminal 2 (Postgres)
+# Terminal 2 (Postgres) — full recreate, not just restart
+source /opt/conda/etc/profile.d/conda.sh
 conda activate pg
-export PGDATA=$HOME/pgdata
+export PGDATA=/tmp/jackj6_pgdata
+rm -rf $PGDATA
+mkdir -p $PGDATA
+chmod 700 $PGDATA
+initdb -D $PGDATA --username=illiniguideserve --pwfile=<(echo "illiniguideserve")
 pg_ctl -D $PGDATA -l $PGDATA/server.log -o "-p 5432" start
+psql -h localhost -p 5432 -U illiniguideserve -d postgres -c "CREATE DATABASE illiniguideserve;"
+
+# Terminal 3 (backend) — re-run schema + ingestion each day
+cd ~/IlliniGuide/backend
+source .venv/bin/activate
+export DATABASE_URL="postgresql+psycopg://illiniguideserve:illiniguideserve@localhost:5432/illiniguideserve"
+python -m scripts.init_db
+python -m scripts.ingest_ece_prereqs --limit 80
+python -m scripts.ingest_gpa --limit 20
+python -m scripts.seed_career_tags
+export EMBEDDING_BACKEND=sentence_transformer
+python -m scripts.ingest_embeddings
 ```
 
-Data in `$PGDATA` **survives** across sessions — you don't lose the ingested courses. You just re-start the Postgres process. `initdb` and `scripts.init_db` and the ingestion scripts are **one-time**; don't re-run them or you'll wipe data.
+The full re-seed takes ~2 minutes (mostly `ingest_ece_prereqs` scraping + MiniLM encoding — the model itself is cached under `~/.cache/huggingface` which **is** on NFS-backed `$HOME` and does persist).
 
 To cleanly stop Postgres when you're done for the day:
 
 ```bash
 pg_ctl -D $PGDATA stop
 ```
+
+(No practical reason to stop it — /tmp cleanup will kill it for you.)
+
+**Longer-term fix**: request a persistent scratch directory from ICRN admins, or pin pgdata to a bind-mounted PVC. Until then, treat the daily re-seed as a fixed cost.
 
 ---
 
