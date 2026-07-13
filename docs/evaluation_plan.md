@@ -1,6 +1,7 @@
 # Retrieval Evaluation Plan
 
-**Status: Implemented harness; live result pending.**
+**Status: Partial — harness implemented and a local Docker/PostgreSQL baseline
+has been recorded; result improvement is pending.**
 
 This plan evaluates whether the retriever returned appropriate catalog evidence
 before any LLM answer is generated. It does not measure advice quality,
@@ -65,6 +66,14 @@ Run only after the coordinator has approved the corpus manifest and real MiniLM
 embedding ingestion. From `backend/`:
 
 ```bash
+.venv/bin/python -m pip install -e '.[embeddings]'
+```
+
+`sentence-transformers` is intentionally an optional dependency: the mock
+embedding backend keeps normal unit tests lightweight, while this extra is
+required for a real MiniLM evidence run.
+
+```bash
 EMBEDDING_BACKEND=sentence_transformer \
 EMBEDDING_MODEL_NAME=sentence-transformers/all-MiniLM-L6-v2 \
 python -m scripts.eval_retrieval --mode semantic --top-k 3 \
@@ -82,9 +91,9 @@ its course count/source URLs match the active DB corpus, and creates
 rates, and a manifest. `sentence_transformer` is required by default; the
 development-only `--allow-unlinked-corpus` or a different `--require-backend`
 setting must never support a resume claim. Review these artifacts before adding
-any percentage to a report or resume. No live ICRN evaluation has been run by
-this change, so this document intentionally reports no Recall, relevance, or
-quality number.
+any percentage to a report or resume. The current local baseline is recorded
+in `docs/benchmark_report.md`; it is retrieval evidence only and does not
+support an answer-relevance claim. No live ICRN evaluation has been run.
 
 ## What to inspect before publishing a result
 

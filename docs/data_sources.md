@@ -37,7 +37,7 @@ This source is used only for GPA/instructor evidence. It is not the official cou
 
 ## ECE Courses and Prerequisites
 
-Status: Implemented for bounded ingestion
+Status: Implemented; local full-source validation recorded
 
 Source page:
 
@@ -78,7 +78,7 @@ This source is used for ECE course titles and prerequisite text. It does not yet
 
 ## CS Course Catalog
 
-Status: Implemented; live validation pending
+Status: Implemented; local live validation recorded
 
 Source page:
 
@@ -110,13 +110,14 @@ cd backend
 .venv/bin/python -m scripts.ingest_cs_courses
 ```
 
-The CS catalog parser is tested only against a saved HTML fixture. A successful
-live command is required before claiming any CS course count, combined ECE+CS
-count, or the resume target of 150+ source-tagged courses.
+The parser is covered by saved legacy/current-markup fixtures. On 2026-07-13,
+the combined local Docker/PostgreSQL run parsed and upserted 161 CS records;
+see the combined coverage gate below. This is source-ingestion evidence, not a
+claim that every course has enough descriptive text for high-quality RAG.
 
 ## Combined ECE + CS Coverage Gate
 
-Status: Implemented; live validation pending
+Status: Implemented; local live validation recorded
 
 Run both official catalog ingestions in one database session and write one
 combined manifest:
@@ -138,6 +139,11 @@ For a bounded parser/DB smoke test, use separate explicit limits:
 cd backend
 .venv/bin/python -m scripts.ingest_course_catalogs --ece-limit 20 --cs-limit 20
 ```
+
+On 2026-07-13, a local Docker/PostgreSQL run parsed 407 ECE rows (199 unique
+after source duplicates) and 161 CS rows, resulting in **360 distinct ECE/CS
+courses**. Its uncommitted runtime manifest is
+`backend/artifacts/ingestion/20260713T081430Z-cef53476/manifest.json`.
 
 ## Manual Career Tags
 

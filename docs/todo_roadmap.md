@@ -21,15 +21,15 @@ This roadmap is deliberately evidence-first. A feature can be implemented in cod
 |---|---|---|
 | Backend layering and structured tools | Implemented | FastAPI route -> router -> dispatcher -> tools -> answer synthesis; backend suite previously passed 223 tests. |
 | PostgreSQL schema | Implemented | `courses`, `gpa_stats`, `course_chunks`, evaluation tables, and pgvector initialization exist. |
-| Course data | Partial | Local data contains about 80 ECE courses and 20 GPA rows; catalog coverage is incomplete. |
-| Semantic RAG code | Partial | Section chunking, MiniLM embedding client, pgvector cosine retrieval, metadata filter, keyword fallback, and low-confidence note exist. A live retrieval-quality report is still missing. |
+| Course data | Partial | A local Docker/PostgreSQL run ingested 360 deduplicated ECE/CS source-tagged courses (199 ECE, 161 CS); source enrichment and GPA coverage remain incomplete. |
+| Semantic RAG code | Partial | A real MiniLM run embedded 268 chunks from 360 courses, but 92 courses produced no chunk; the first retrieval baseline is below quality targets. |
 | LLM serving | Implemented | Self-hosted **Qwen2.5-7B-Instruct** on one ICRN H200 through vLLM, `float16`, 8K context, prefix caching. |
 | Streaming UI | Implemented | Backend SSE and frontend incremental rendering/cancellation exist; the frontend production build has passed. |
 | Load benchmark | Partial | A 10-concurrency run recorded streaming p50 TTFT 55 ms and blocking p50 472 ms. Saved results do not yet establish tokens/sec, error rate, or GPU compute utilization. |
 | Observability | Partial | Per-tool debug trace and a vLLM `/metrics` snapshot script exist; no Prometheus scrape, Grafana dashboard, or application metrics endpoint is verified. |
 | Docker | Partial | Dockerfiles are uncommitted WIP and lack a clean-environment compose smoke test. |
 | Kubernetes | Planned | `infra/k8s/` has no manifests or recovery evidence. |
-| Evaluation | Partial | A frozen 34-case retrieval harness, semantic/keyword comparison, and artifact schema exist; no live DB run or saved quality result exists. |
+| Evaluation | Partial | A frozen 34-case evaluation ran against local Docker/PostgreSQL: semantic unfiltered Recall@3 was 8/22 (36.4%); see `docs/benchmark_report.md`. |
 
 ## Resume claim gates
 
@@ -71,7 +71,7 @@ These are targets, not current accomplishments.
 
 ## Phase 1 — Expand and validate the RAG corpus
 
-**Status:** Partial — code and test harnesses are implemented; all live corpus, real MiniLM, and scored-evaluation evidence remains pending.
+**Status:** Partial — live local Docker corpus, MiniLM embedding, and retrieval evidence exist; source enrichment, quality improvement, and ICRN validation remain pending.
 
 **Effort:** 1–2 days
 
