@@ -52,6 +52,9 @@ def ingest_course_catalogs_html(
             source_url=cs_source_url,
             commit=False,
         )
+        # SessionLocal disables autoflush. Flush the two staged catalog batches
+        # before counting them, while keeping the final commit atomic.
+        session.flush()
         total_distinct_course_count = session.scalar(
             select(func.count(distinct(Course.course_id))).where(Course.department.in_(("ECE", "CS")))
         )

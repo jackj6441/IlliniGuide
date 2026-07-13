@@ -263,6 +263,9 @@ def test_combined_ingestion_reports_distinct_course_count_in_one_manifest(tmp_pa
     payload = json.loads(manifest.read_text(encoding="utf-8"))
 
     assert results[2] == 155
+    session.flush.assert_called_once()
+    called_methods = [method[0] for method in session.method_calls]
+    assert called_methods.index("flush") < called_methods.index("scalar")
     assert [entry["department"] for entry in payload["departments"]] == ["ECE", "CS"]
     assert payload["total_distinct_course_count"] == 155
 
