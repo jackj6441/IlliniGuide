@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "case_set_id": "retrieval_cases.v1",
+  "description": "Frozen advisor-style retrieval labels. This is a retrieval-evidence set, not an answer-quality set.",
+  "cases": [
+    {"id": "direct-ece-385", "category": "direct_lookup", "query": "What is ECE 385?", "acceptable_course_ids": ["ECE 385"], "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "direct-ece-391", "category": "direct_lookup", "query": "What is ECE 391 about?", "acceptable_course_ids": ["ECE 391"], "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "direct-ece-407", "category": "direct_lookup", "query": "Tell me about ECE 407.", "acceptable_course_ids": ["ECE 407"], "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "direct-ece-408", "category": "direct_lookup", "query": "What does ECE 408 cover?", "acceptable_course_ids": ["ECE 408"], "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "direct-ece-411", "category": "direct_lookup", "query": "Can you summarize ECE 411?", "acceptable_course_ids": ["ECE 411"], "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "direct-ece-419", "category": "direct_lookup", "query": "What is ECE 419?", "acceptable_course_ids": ["ECE 419"], "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "direct-ece-422", "category": "direct_lookup", "query": "What is taught in ECE 422?", "acceptable_course_ids": ["ECE 422"], "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "direct-ece-428", "category": "direct_lookup", "query": "Give me information about ECE 428.", "acceptable_course_ids": ["ECE 428"], "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "direct-ece-448", "category": "direct_lookup", "query": "What is ECE 448 about?", "acceptable_course_ids": ["ECE 448"], "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "direct-ece-449", "category": "direct_lookup", "query": "Tell me about ECE 449.", "acceptable_course_ids": ["ECE 449"], "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "direct-ece-470", "category": "direct_lookup", "query": "What does ECE 470 cover?", "acceptable_course_ids": ["ECE 470"], "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "direct-ece-494", "category": "direct_lookup", "query": "What is ECE 494?", "acceptable_course_ids": ["ECE 494"], "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+
+    {"id": "prereq-ece-385", "category": "metadata_filtered", "query": "What are the prerequisites for ECE 385?", "acceptable_course_ids": ["ECE 385"], "expected_section_type": "prerequisites", "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "prereq-ece-391", "category": "metadata_filtered", "query": "Which classes must I complete before ECE 391?", "acceptable_course_ids": ["ECE 391"], "expected_section_type": "prerequisites", "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "prereq-ece-408", "category": "metadata_filtered", "query": "Does ECE 408 have prerequisites?", "acceptable_course_ids": ["ECE 408"], "expected_section_type": "prerequisites", "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "prereq-ece-411", "category": "metadata_filtered", "query": "What do I need before taking ECE 411?", "acceptable_course_ids": ["ECE 411"], "expected_section_type": "prerequisites", "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "prereq-ece-422", "category": "metadata_filtered", "query": "Prerequisites for ECE 422", "acceptable_course_ids": ["ECE 422"], "expected_section_type": "prerequisites", "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "prereq-ece-448", "category": "metadata_filtered", "query": "Can I take ECE 448 without its prerequisites?", "acceptable_course_ids": ["ECE 448"], "expected_section_type": "prerequisites", "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "prereq-ece-470", "category": "metadata_filtered", "query": "What prior coursework is required for ECE 470?", "acceptable_course_ids": ["ECE 470"], "expected_section_type": "prerequisites", "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "prereq-ece-494", "category": "metadata_filtered", "query": "List the prerequisites of ECE 494.", "acceptable_course_ids": ["ECE 494"], "expected_section_type": "prerequisites", "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+
+    {"id": "paraphrase-systems-programming", "category": "paraphrase", "query": "I want hands-on systems programming with C and operating-system concepts.", "acceptable_course_ids": ["ECE 391"], "expected_section_type": "career_direction", "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "paraphrase-gpu-programming", "category": "paraphrase", "query": "Which course would help me learn GPU programming and CUDA?", "acceptable_course_ids": ["ECE 408"], "expected_section_type": "career_direction", "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "paraphrase-computer-architecture", "category": "paraphrase", "query": "I am interested in processors, memory hierarchy, and computer architecture.", "acceptable_course_ids": ["ECE 411"], "expected_section_type": "career_direction", "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "paraphrase-security", "category": "paraphrase", "query": "What ECE class is a good fit for an information security path?", "acceptable_course_ids": ["ECE 407", "ECE 419", "ECE 422"], "expected_section_type": "career_direction", "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "paraphrase-robotics", "category": "paraphrase", "query": "I want a course related to robotics or computer vision.", "acceptable_course_ids": ["ECE 470", "ECE 494"], "expected_section_type": "career_direction", "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "paraphrase-machine-learning", "category": "paraphrase", "query": "Which course supports a machine-learning or data-science direction?", "acceptable_course_ids": ["ECE 448", "ECE 449", "ECE 494"], "expected_section_type": "career_direction", "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+
+    {"id": "cross-ai-infra", "category": "cross_course", "query": "Compare courses relevant to AI infrastructure and systems work.", "acceptable_course_ids": ["ECE 408", "ECE 411"], "expected_section_type": "career_direction", "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "cross-hardware-systems", "category": "cross_course", "query": "I need a hardware-oriented systems course; what catalog evidence should I read?", "acceptable_course_ids": ["ECE 385", "ECE 411"], "expected_section_type": "career_direction", "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "cross-security-options", "category": "cross_course", "query": "Show the course evidence for ECE security electives.", "acceptable_course_ids": ["ECE 407", "ECE 419", "ECE 422"], "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+    {"id": "cross-ai-robotics", "category": "cross_course", "query": "I am deciding between AI, vision, and robotics electives.", "acceptable_course_ids": ["ECE 448", "ECE 449", "ECE 470", "ECE 494"], "expected_source_name": "UIUC Course Catalog", "expected_safety": "evidence"},
+
+    {"id": "unsupported-astronomy", "category": "unsupported", "query": "Which ECE course teaches observational astronomy?", "acceptable_course_ids": [], "expected_safety": "low_confidence_or_no_evidence", "note": "Do not treat an unrelated course chunk as supported evidence."},
+    {"id": "unsupported-law", "category": "unsupported", "query": "What are the prerequisites for a law school course?", "acceptable_course_ids": [], "expected_safety": "low_confidence_or_no_evidence", "note": "Outside the ECE catalog scope."},
+    {"id": "unsupported-invented-course", "category": "unsupported", "query": "Tell me about ECE 999 Quantum Advising.", "acceptable_course_ids": [], "expected_safety": "no_evidence", "note": "Invented course ID must not receive catalog evidence."},
+    {"id": "unsupported-dorm-policy", "category": "unsupported", "query": "Which dorm has the best dining hall near campus?", "acceptable_course_ids": [], "expected_safety": "low_confidence_or_no_evidence", "note": "Campus-life query is outside this corpus."}
+  ]
+}

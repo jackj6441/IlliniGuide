@@ -247,7 +247,7 @@ Kubernetes is **Implemented** only after rollout and recovery evidence—not whe
 | Wave | Concurrent agents | Coordinator action | Merge/run order |
 |---|---|---|---|
 | 0 | Docs A + Docs B | Reconcile status vocabulary | Merge together after cross-review |
-| 1 preparation | Corpus + Embedding + Evaluation | Freeze artifact naming and source policy | Merge isolated PRs; run corpus -> embeddings -> evaluation |
+| 1 preparation | Corpus + Embedding + Evaluation | **Partial:** code/test harnesses integrated; no live evidence | Commit isolated PRs; run corpus -> embeddings -> evaluation sequentially |
 | 2 preparation | App Metrics + Telemetry + Benchmark/Model | Freeze metric and manifest contract | Merge metrics -> telemetry -> benchmark writer; run 7B matrix -> 32B gate |
 | 3 | Compose only | Protect Docker WIP ownership | Clean Compose verification |
 | 4 | Kubernetes only | Verify namespace/permissions | Apply -> rollout -> pod-recovery test |

@@ -29,7 +29,7 @@ This roadmap is deliberately evidence-first. A feature can be implemented in cod
 | Observability | Partial | Per-tool debug trace and a vLLM `/metrics` snapshot script exist; no Prometheus scrape, Grafana dashboard, or application metrics endpoint is verified. |
 | Docker | Partial | Dockerfiles are uncommitted WIP and lack a clean-environment compose smoke test. |
 | Kubernetes | Planned | `infra/k8s/` has no manifests or recovery evidence. |
-| Evaluation | Partial | Retrieval-evaluation code exists; no 30–50 question advisor QA set and no saved quality report exist. |
+| Evaluation | Partial | A frozen 34-case retrieval harness, semantic/keyword comparison, and artifact schema exist; no live DB run or saved quality result exists. |
 
 ## Resume claim gates
 
@@ -71,7 +71,7 @@ These are targets, not current accomplishments.
 
 ## Phase 1 — Expand and validate the RAG corpus
 
-**Status:** Planned
+**Status:** Partial — code and test harnesses are implemented; all live corpus, real MiniLM, and scored-evaluation evidence remains pending.
 
 **Effort:** 1–2 days
 

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.models import Course
+from app.db.models import Course, CourseChunk
 from app.services.rag.normalize import extract_course_ids
 from app.services.rag.sample_data import SAMPLE_CHUNKS, SampleChunk
 
@@ -82,6 +82,52 @@ def search_course_docs_from_db(
     if ranked:
         return ranked[:top_k]
     return search_course_docs(query, course_ids=course_ids, top_k=top_k)
+
+
+def search_course_chunks_by_keyword(
+    session: Session,
+    query: str,
+    course_ids: list[str] | None = None,
+    top_k: int = 5,
+) -> list[RetrievedChunk]:
+    """Rank persisted RAG chunks with lexical overlap for an evaluation baseline.
+
+    Unlike the legacy course-profile fallback, this uses the same
+    ``course_chunks`` corpus and preserves source/section metadata. That makes
+    source and section metrics comparable to pgvector retrieval.
+    """
+    if top_k <= 0:
+        return []
+
+    statement = select(CourseChunk)
+    if course_ids:
+        statement = statement.where(CourseChunk.course_id.in_(course_ids))
+    query_tokens = tokenize(query)
+    ranked: list[RetrievedChunk] = []
+    for stored_chunk in session.scalars(statement).all():
+        chunk = RetrievedChunk(
+            course_id=stored_chunk.course_id or "",
+            source_name=stored_chunk.source_name,
+            source_url=stored_chunk.source_url or "",
+            section_type=stored_chunk.section_type or "",
+            chunk_text=stored_chunk.chunk_text,
+            score=0.0,
+        )
+        score = _score_retrieved_chunk(query_tokens, chunk)
+        if score > 0:
+            ranked.append(
+                RetrievedChunk(
+                    course_id=chunk.course_id,
+                    source_name=chunk.source_name,
+                    source_url=chunk.source_url,
+                    section_type=chunk.section_type,
+                    chunk_text=chunk.chunk_text,
+                    score=round(score, 4),
+                )
+            )
+
+    ranked.sort(key=lambda chunk: chunk.score, reverse=True)
+    return ranked[:top_k]
 
 
 def _score_chunk(query_tokens: set[str], chunk: SampleChunk) -> float:
