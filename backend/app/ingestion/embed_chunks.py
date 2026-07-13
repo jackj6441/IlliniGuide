@@ -10,6 +10,7 @@ career-direction chunk when new tags land).
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Iterable
 
 from sqlalchemy import delete, func, select
@@ -27,6 +28,9 @@ class IngestReport:
     chunks_written: int
     embedding_model: str
     embedding_dimension: int
+    embedding_backend: str
+    started_at_utc: datetime
+    completed_at_utc: datetime
 
 
 def build_chunks_for_course(
@@ -106,16 +110,21 @@ def ingest_course_embeddings(
     that produce zero chunks (all catalog fields blank, no GPA history) are
     counted as skipped and their existing chunks are left untouched.
     """
+    started_at_utc = datetime.now(UTC)
     statement = select(Course)
     if course_ids is not None:
         wanted = list(course_ids)
         if not wanted:
+            completed_at_utc = datetime.now(UTC)
             return IngestReport(
                 courses_seen=0,
                 courses_skipped=0,
                 chunks_written=0,
                 embedding_model=embedding_client.model_name,
                 embedding_dimension=embedding_client.dimension,
+                embedding_backend=embedding_client.backend_name,
+                started_at_utc=started_at_utc,
+                completed_at_utc=completed_at_utc,
             )
         statement = statement.where(Course.course_id.in_(wanted))
 
@@ -143,12 +152,16 @@ def ingest_course_embeddings(
 
     session.commit()
 
+    completed_at_utc = datetime.now(UTC)
     return IngestReport(
         courses_seen=courses_seen,
         courses_skipped=courses_skipped,
         chunks_written=chunks_written,
         embedding_model=embedding_client.model_name,
         embedding_dimension=embedding_client.dimension,
+        embedding_backend=embedding_client.backend_name,
+        started_at_utc=started_at_utc,
+        completed_at_utc=completed_at_utc,
     )
 
 

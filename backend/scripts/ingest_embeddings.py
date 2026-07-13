@@ -35,7 +35,9 @@ def main() -> None:
     print(
         f"Done. courses_seen={report.courses_seen} "
         f"courses_skipped={report.courses_skipped} "
-        f"chunks_written={report.chunks_written}"
+        f"chunks_written={report.chunks_written} "
+        f"started_at_utc={report.started_at_utc.isoformat()} "
+        f"completed_at_utc={report.completed_at_utc.isoformat()}"
     )
 
 

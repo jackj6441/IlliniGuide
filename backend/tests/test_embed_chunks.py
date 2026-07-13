@@ -212,6 +212,8 @@ class TestIngestCourseEmbeddings:
         assert report.chunks_written == 5
         assert report.embedding_model == "mock-embedding"
         assert report.embedding_dimension == 384
+        assert report.embedding_backend == "mock"
+        assert report.started_at_utc <= report.completed_at_utc
 
         assert len(session.added_chunks) == 5
         for chunk in session.added_chunks:
