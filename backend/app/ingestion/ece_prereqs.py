@@ -1,12 +1,16 @@
 from dataclasses import dataclass
-from html import unescape
 from html.parser import HTMLParser
 from urllib.request import Request, urlopen
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.models import Course
+from app.ingestion.course_catalog import (
+    CourseIngestionResult,
+    CourseUpsertAction,
+    ingest_course_records,
+    normalize_whitespace,
+    upsert_source_course,
+)
 
 
 ECE_COURSES_SOURCE_URL = "https://ece.illinois.edu/academics/courses"
@@ -21,11 +25,7 @@ class ECECourseRecord:
     prerequisites: str | None
 
 
-@dataclass(frozen=True)
-class ECEPrereqIngestionResult:
-    rows_seen: int
-    rows_ingested: int
-    source_url: str
+ECEPrereqIngestionResult = CourseIngestionResult
 
 
 class ECECourseTableParser(HTMLParser):
@@ -95,30 +95,22 @@ def ingest_ece_prereqs_html(
     session: Session,
     html_text: str,
     *,
-    limit: int = 20,
+    limit: int | None = None,
     source_url: str = ECE_COURSES_SOURCE_URL,
+    commit: bool = True,
 ) -> ECEPrereqIngestionResult:
-    rows_seen = 0
-    rows_ingested = 0
-    seen_course_ids: set[str] = set()
-
-    for record in parse_ece_course_records(html_text):
-        rows_seen += 1
-        if record.course_id in seen_course_ids:
-            continue
-
-        upsert_course(session, record, source_url=source_url)
-        seen_course_ids.add(record.course_id)
-        rows_ingested += 1
-
-        if rows_ingested >= limit:
-            break
-
-    session.commit()
-    return ECEPrereqIngestionResult(
-        rows_seen=rows_seen,
-        rows_ingested=rows_ingested,
+    return ingest_course_records(
+        session,
+        parse_ece_course_records(html_text),
+        department="ECE",
         source_url=source_url,
+        commit=commit,
+        limit=limit,
+        upsert=lambda current_session, record: upsert_course(
+            current_session,
+            record,  # type: ignore[arg-type]
+            source_url=source_url,
+        ),
     )
 
 
@@ -127,27 +119,5 @@ def upsert_course(
     record: ECECourseRecord,
     *,
     source_url: str,
-) -> None:
-    course = session.scalar(select(Course).where(Course.course_id == record.course_id))
-    if course is None:
-        session.add(
-            Course(
-                course_id=record.course_id,
-                department=record.department,
-                course_number=record.course_number,
-                title=record.title,
-                prerequisites=record.prerequisites,
-                source_url=source_url,
-            )
-        )
-        return
-
-    course.department = record.department
-    course.course_number = record.course_number
-    course.title = record.title
-    course.prerequisites = record.prerequisites
-    course.source_url = source_url
-
-
-def normalize_whitespace(value: str) -> str:
-    return " ".join(unescape(value).split())
+) -> CourseUpsertAction:
+    return upsert_source_course(session, record, source_url=source_url)

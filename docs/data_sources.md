@@ -48,20 +48,96 @@ https://ece.illinois.edu/academics/courses
 Current ingestion boundary:
 
 - Only ECE course rows from the official ECE page are considered.
-- Default limit is 20 unique course rows.
+- The parser and ingestion seam accept `--limit` for bounded development runs;
+  omitting it ingests every parsed row from the source page.
 - The source URL is stored on each `courses` row.
 - The script is re-runnable and updates existing course title/prerequisite fields.
 - The first real run ingested 20 source-tagged ECE course rows.
 - The local development database was later expanded to 80 ECE course rows so upper-level systems and AI infrastructure courses such as `ECE 408` and `ECE 411` are available for tool testing.
 
-Run:
+Run a bounded local development slice:
 
 ```bash
 cd backend
 .venv/bin/python -m scripts.ingest_ece_prereqs --limit 20
 ```
 
+Run a full ECE source ingestion (this is a live-network/database operation):
+
+```bash
+cd backend
+.venv/bin/python -m scripts.ingest_ece_prereqs
+```
+
+Each live invocation writes a machine-readable manifest under
+`artifacts/ingestion/<run-id>/manifest.json`. It contains the source URL,
+UTC fetch timestamp, and parsed/inserted/updated/skipped/duplicate counts for
+that department. No runtime artifact is committed as project evidence.
+
 This source is used for ECE course titles and prerequisite text. It does not yet parse prerequisite logic into a graph.
+
+## CS Course Catalog
+
+Status: Implemented; live validation pending
+
+Source page:
+
+```text
+https://catalog.illinois.edu/courses-of-instruction/cs/
+```
+
+Current ingestion boundary:
+
+- The parser accepts only CS course headings with a valid `CS <number>` identity.
+- It stores the official catalog URL on every inserted or updated `courses` row.
+- Prerequisites are stored as source text; malformed or absent prerequisite text
+  does not abort the run and is not yet converted into a prerequisite graph.
+- Re-running the same source upserts existing courses rather than adding duplicate
+  rows. Duplicate course identities within one source response are counted in the
+  runtime manifest.
+
+Run a bounded local development slice:
+
+```bash
+cd backend
+.venv/bin/python -m scripts.ingest_cs_courses --limit 20
+```
+
+Run the full CS source ingestion:
+
+```bash
+cd backend
+.venv/bin/python -m scripts.ingest_cs_courses
+```
+
+The CS catalog parser is tested only against a saved HTML fixture. A successful
+live command is required before claiming any CS course count, combined ECE+CS
+count, or the resume target of 150+ source-tagged courses.
+
+## Combined ECE + CS Coverage Gate
+
+Status: Implemented; live validation pending
+
+Run both official catalog ingestions in one database session and write one
+combined manifest:
+
+```bash
+cd backend
+.venv/bin/python -m scripts.ingest_course_catalogs --require-minimum-distinct 150
+```
+
+The manifest includes two department entries and
+`total_distinct_course_count`, queried after both upserts using distinct
+`course_id` values restricted to ECE and CS. Run this against the intended
+clean evaluation database when using it as evidence for the 150+ resume gate;
+the count otherwise includes pre-existing ECE/CS course rows in that database.
+
+For a bounded parser/DB smoke test, use separate explicit limits:
+
+```bash
+cd backend
+.venv/bin/python -m scripts.ingest_course_catalogs --ece-limit 20 --cs-limit 20
+```
 
 ## Manual Career Tags
 
