@@ -1,0 +1,23 @@
+# Local observability wiring for the prototype.
+#
+# These targets assume Prometheus runs in Docker on the developer machine. On
+# the ICRN host, replace `host.docker.internal` with `localhost` or the
+# reachable service DNS name. The file is configuration, not deployment proof.
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: illiniguideserve-backend
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["host.docker.internal:8001"]
+        labels:
+          service: illiniguideserve-backend
+
+  - job_name: vllm
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["host.docker.internal:8000"]
+        labels:
+          service: vllm

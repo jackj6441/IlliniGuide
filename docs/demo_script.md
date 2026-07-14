@@ -96,7 +96,7 @@ Explain that streaming improves perceived latency but does not by itself improve
 | Self-hosted vLLM | Implemented | Qwen2.5-7B-Instruct FP16 baseline on ICRN H200. |
 | Semantic pgvector RAG | Partial | Implemented code path may be demonstrated, but no quality percentage is valid until a live labeled evaluation is saved. |
 | Benchmark | Partial | Use the historical TTFT/latency figures above together with the command and limitations in `llm_serving_design.md`; tokens/sec, error rate, and GPU utilization remain unmeasured in saved artifacts. |
-| Observability | Partial | Application `/metrics` exposes request/error, HTTP/tool/retrieval/LLM latency, and streaming TTFT; the GPU sampler is available, while vLLM/GPU scraping and Grafana are still pending. |
+| Observability | Partial | Application metrics, GPU sampler, Prometheus scrape config, and Grafana dashboard assets exist; live scrape/dashboard verification is still pending. |
 | Docker | Partial | Image files are WIP, but do not describe Compose as verified. |
 | Kubernetes | Planned | Describe only as a future reliability phase. |
 

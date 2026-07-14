@@ -26,7 +26,7 @@ This roadmap is deliberately evidence-first. A feature can be implemented in cod
 | LLM serving | Implemented | Self-hosted **Qwen2.5-7B-Instruct** on one ICRN H200 through vLLM, `float16`, 8K context, prefix caching. |
 | Streaming UI | Implemented | Backend SSE and frontend incremental rendering/cancellation exist; the frontend production build has passed. |
 | Load benchmark | Partial | The harness now writes per-request JSON, summary, and manifest with `--output-dir`; the existing 10-concurrency notes still do not establish a new artifact-backed tokens/sec, error-rate, or GPU-utilization result. |
-| Observability | Partial | `/metrics` now exposes application request/error counters, HTTP/tool/retrieval/LLM latency, and streaming TTFT; a timestamped `nvidia-smi` sampler exists, while same-window runs, Prometheus scraping, and Grafana remain unverified. |
+| Observability | Partial | `/metrics`, a timestamped `nvidia-smi` sampler, Prometheus scrape config, and Grafana dashboard assets exist; same-window H200 runs and live scrape/dashboard verification remain unverified. |
 | Docker | Partial | Dockerfiles are uncommitted WIP and lack a clean-environment compose smoke test. |
 | Kubernetes | Planned | `infra/k8s/` has no manifests or recovery evidence. |
 | Evaluation | Partial | The frozen 34-case evaluation runs against local Docker/PostgreSQL; the production router evaluates 22 RAG evidence cases plus four safety cases. Current semantic Recall@3 is 20/22 (90.9%), unfiltered discovery is 8/10 (80.0%), and unsupported safety is 4/4. See `docs/benchmark_report.md`. |
@@ -143,11 +143,13 @@ After 1A, the resume may say “indexed 150+ department courses.” After 1C, it
 
 ### 2B. vLLM and GPU metrics
 
-- [ ] Configure Prometheus to scrape vLLM `/metrics`; retain `backend/scripts/vllm_metrics_snapshot.py` as a lightweight manual diagnostic.
+- [x] Add Prometheus scrape configuration for backend and vLLM `/metrics`; retain `backend/scripts/vllm_metrics_snapshot.py` as a lightweight manual diagnostic.
+- [ ] Verify both scrape targets return data in a running Prometheus instance.
 - [ ] Capture prompt/generation throughput, TTFT, waiting queue depth, and KV-cache utilization.
 - [x] Add a controlled fallback GPU sampler: `backend/scripts/gpu_sampler.py` writes timestamped `nvidia-smi` utilization/memory CSV plus a manifest. A DCGM exporter integration remains optional.
 - [ ] Store the sampler cadence, command/version, start/end timestamps, and raw CSV alongside each benchmark.
-- [ ] Create one Grafana dashboard showing app latency/errors alongside vLLM queue/KV-cache and GPU utilization.
+- [x] Create a Grafana dashboard asset showing app latency/errors alongside vLLM queue/KV-cache metrics.
+- [ ] Verify the dashboard against a live Prometheus datasource and add GPU panels after DCGM or sampler export is wired.
 
 ### Non-negotiable metric definitions
 

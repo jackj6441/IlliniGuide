@@ -143,7 +143,7 @@ The arrows represent **evidence dependencies**, not necessarily code-preparation
 | Agent | Owned files | Deliverable / acceptance |
 |---|---|---|
 | App Metrics Agent | New `backend/app/observability.py`, app wiring, `backend/app/services/advising_service.py`, targeted tests, dependency metadata | Prometheus text endpoint; request/error counters; E2E/retrieval/tool/LLM/TTFT histograms; tool success/failure counters. No high-cardinality labels such as prompt, course ID, request ID, or raw error. |
-| Telemetry Agent | `backend/scripts/vllm_metrics_snapshot.py`, new `backend/scripts/gpu_sampler.py`, `infra/prometheus/`, `infra/grafana/dashboards/`, telemetry note | Timestamped GPU CSV plus vLLM scrape configuration and dashboard. Must distinguish GPU compute utilization, VRAM usage, and KV-cache usage. |
+| Telemetry Agent | `backend/scripts/vllm_metrics_snapshot.py`, `backend/scripts/gpu_sampler.py`, `infra/prometheus/`, `infra/grafana/`, telemetry note | Timestamped GPU CSV plus vLLM scrape configuration and dashboard assets. Must distinguish GPU compute utilization, VRAM usage, and KV-cache usage; live verification is a coordinator gate. |
 | Benchmark & Model Agent | `backend/scripts/benchmark.py`, benchmark tests, `scripts/dev_up.sh`, benchmark artifact schema/docs | `--output-dir` raw per-request JSON plus summary/manifest; exact model/dtype/context/VRAM/TP config; no model behavior/parser change in this PR. |
 
 ### Handoff contract

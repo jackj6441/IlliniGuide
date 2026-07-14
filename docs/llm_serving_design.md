@@ -261,9 +261,10 @@ Status: Partial
   Prometheus scraping and Grafana.
 - Missing: Prometheus scrape configuration and a verified Grafana dashboard.
 - Partial: `scripts/gpu_sampler.py` can capture timestamped GPU compute utilization
-  and VRAM usage CSV. Missing: a same-window load-test run, KV-cache/queue
-  correlation, structured benchmark output, and a counted-request error
-  denominator.
+  and VRAM usage CSV, and Prometheus/Grafana configuration assets exist.
+  Missing: a same-window load-test run, live scrape/dashboard verification,
+  KV-cache/queue correlation, structured benchmark output, and a counted-request
+  error denominator.
 
 `--gpu-memory-utilization 0.85` must never be reported as “85% GPU utilization.” Resume claims such as “65–70% GPU utilization” require timestamped compute-utilization samples from the same named load run.
 
