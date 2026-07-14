@@ -43,10 +43,14 @@ def search_course_docs(
                 seen.add(normalized)
                 normalized_course_ids.append(normalized)
 
+    query_course_ids = extract_course_ids(query)
+    if normalized_course_ids and query_course_ids and normalized_course_ids != query_course_ids:
+        raise ValueError("course_ids must match course IDs in query when both are provided")
+
     # The router normally supplies IDs explicitly. Extracting them here keeps
     # the public tool safe for direct callers as well: a query for ECE 999
     # must not silently retrieve evidence for a different course.
-    effective_course_ids = normalized_course_ids or extract_course_ids(query)
+    effective_course_ids = normalized_course_ids or query_course_ids
 
     client = embedding_client or get_default_embedding_client()
     chunks, retrieval_notes = hybrid_search(

@@ -17,6 +17,7 @@ from app.services.rag.eval import (
     evaluate,
     format_report,
     load_cases,
+    router_retrieval_cases,
 )
 from app.services.rag.retriever import RetrievedChunk
 from scripts.eval_retrieval import (
@@ -204,8 +205,8 @@ def test_explicit_keyword_and_semantic_adapters_are_stub_testable(
 
     case = EvalCase(
         case_id="filtered",
-        category="metadata_filtered",
-        query="What are prerequisites for ECE 391?",
+        category="direct_lookup",
+        query="What is ECE 391?",
         expected_course_ids=("ECE 391",),
     )
     semantic = build_retriever("semantic", MagicMock(), MagicMock())(case, 3)
@@ -247,9 +248,36 @@ def test_course_id_filter_matches_course_qa_and_unsupported_query_paths() -> Non
     )
 
     assert course_filter_for_case(direct_lookup) == ["ECE 391"]
-    assert course_filter_for_case(filtered) == ["ECE 391"]
+    assert course_filter_for_case(filtered) is None
     assert course_filter_for_case(discovery) is None
     assert course_filter_for_case(invented) == ["ECE 999"]
+
+
+def test_router_retrieval_cases_excludes_structured_prerequisite_tool_cases() -> None:
+    direct = EvalCase(
+        case_id="direct",
+        category="direct_lookup",
+        query="What is ECE 391?",
+        expected_course_ids=("ECE 391",),
+    )
+    prerequisite = EvalCase(
+        case_id="prereq",
+        category="metadata_filtered",
+        query="What are the prerequisites for ECE 391?",
+        expected_course_ids=("ECE 391",),
+    )
+    unsupported = EvalCase(
+        case_id="invented",
+        category="unsupported",
+        query="Tell me about ECE 999",
+        expected_course_ids=(),
+        expected_safety="no_evidence",
+    )
+
+    eligible, skipped = router_retrieval_cases([direct, prerequisite, unsupported])
+
+    assert [case.case_id for case in eligible] == ["direct", "invented"]
+    assert [case.case_id for case in skipped] == ["prereq"]
 
 
 def test_course_id_filtered_cases_are_excluded_from_unfiltered_recall() -> None:
@@ -258,12 +286,6 @@ def test_course_id_filtered_cases_are_excluded_from_unfiltered_recall() -> None:
             case_id="direct",
             category="direct_lookup",
             query="What is ECE 391?",
-            expected_course_ids=("ECE 391",),
-        ),
-        EvalCase(
-            case_id="filtered",
-            category="metadata_filtered",
-            query="ECE 391 prerequisites",
             expected_course_ids=("ECE 391",),
         ),
         EvalCase(
@@ -280,13 +302,12 @@ def test_course_id_filtered_cases_are_excluded_from_unfiltered_recall() -> None:
         retriever=_adapter(
             {
                 "What is ECE 391?": [_chunk("ECE 391")],
-                "ECE 391 prerequisites": [_chunk("ECE 391")],
                 "systems programming": [_chunk("ECE 408")],
             }
         ),
     )
 
-    assert report.topk_hit_rate == 2 / 3
+    assert report.topk_hit_rate == 0.5
     assert report.unfiltered_evidence_expected == 1
     assert report.unfiltered_topk_hit_rate == 0.0
 

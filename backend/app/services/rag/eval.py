@@ -17,8 +17,8 @@ from sqlalchemy.orm import Session
 
 from app.services.rag.embeddings import EmbeddingClient
 from app.services.rag.pgvector_retriever import LOW_CONFIDENCE_THRESHOLD, semantic_search
-from app.services.rag.normalize import extract_course_ids
 from app.services.rag.retriever import RetrievedChunk, search_course_chunks_by_keyword
+from app.services.tools.router import plan_tools
 
 
 RetrievalMode = Literal["semantic", "keyword"]
@@ -243,17 +243,36 @@ def build_retriever(
 
 
 def course_filter_for_case(case: EvalCase) -> list[str] | None:
-    """Mirror the chat router's course-ID metadata filter in retrieval eval.
+    """Return the filter from the router's actual ``search_course_docs`` call.
 
-    Course QA and prerequisite cases pass explicitly mentioned course IDs to
-    ``search_course_docs``. An unsupported query with an invented course ID
-    follows the same path and must receive no unrelated catalog evidence.
-    Paraphrase and cross-course discovery cases remain unfiltered, because
-    their intended behavior is semantic discovery rather than direct lookup.
+    This deliberately avoids treating a structured prerequisite tool call as
+    RAG. If the router does not plan document search, the caller receives no
+    filter because that case should be excluded by ``router_retrieval_cases``.
     """
-    if case.category not in {"direct_lookup", "metadata_filtered", "unsupported"}:
-        return None
-    return extract_course_ids(case.query) or None
+    for call in plan_tools(case.query).tool_calls:
+        if call.tool_name == "search_course_docs":
+            raw_course_ids = call.arguments.get("course_ids")
+            return list(raw_course_ids) if isinstance(raw_course_ids, list) else None
+    return None
+
+
+def router_retrieval_cases(
+    cases: Iterable[EvalCase],
+) -> tuple[tuple[EvalCase, ...], tuple[EvalCase, ...]]:
+    """Split frozen cases by whether the production router uses document search.
+
+    Prerequisite checks are evaluated through their structured tool, not RAG;
+    retaining them in a router-aligned retrieval score would inflate a metric
+    with a path the chat service does not execute.
+    """
+    eligible: list[EvalCase] = []
+    skipped: list[EvalCase] = []
+    for case in cases:
+        if any(call.tool_name == "search_course_docs" for call in plan_tools(case.query).tool_calls):
+            eligible.append(case)
+        else:
+            skipped.append(case)
+    return tuple(eligible), tuple(skipped)
 
 
 def evaluate(
@@ -417,4 +436,5 @@ __all__ = [
     "evaluate",
     "format_report",
     "load_cases",
+    "router_retrieval_cases",
 ]

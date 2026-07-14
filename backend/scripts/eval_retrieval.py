@@ -22,7 +22,13 @@ from sqlalchemy import select
 from app.db.session import SessionLocal
 from app.db.models import Course, CourseChunk
 from app.services.rag.embeddings import get_embedding_client
-from app.services.rag.eval import EvalReport, evaluate, format_report, load_cases
+from app.services.rag.eval import (
+    EvalReport,
+    evaluate,
+    format_report,
+    load_cases,
+    router_retrieval_cases,
+)
 
 
 def _default_artifact_root() -> Path:
@@ -208,6 +214,7 @@ def write_artifacts(
     corpus_snapshot: dict[str, Any] | None = None,
     ingestion_manifest: dict[str, Any] | None = None,
     git_sha: str | None = None,
+    skipped_case_ids: Sequence[str] = (),
 ) -> Path:
     """Persist one immutable run directory and return it; public CLI test seam."""
     run_dir = _safe_run_directory(output_dir, run_id)
@@ -225,11 +232,16 @@ def write_artifacts(
         "finished_at_utc": finished_at.isoformat(),
         "git_sha": git_sha or _git_sha(),
         "command": command,
-        "case_set": {"path": str(case_file), "id": report.case_set_id},
+        "case_set": {
+            "path": str(case_file),
+            "id": report.case_set_id,
+            "evaluated_retrieval_cases": report.total,
+            "skipped_non_retrieval_case_ids": list(skipped_case_ids),
+        },
         "retriever": {
             "mode": report.retrieval_mode,
             "top_k": report.top_k,
-            "metadata_filter_policy": "metadata_filtered cases derive course IDs from query",
+            "metadata_filter_policy": "course IDs are taken from the production router's search_course_docs call",
         },
         "embedding": {
             "backend": embedding_backend,
@@ -286,10 +298,11 @@ def main(argv: Sequence[str] | None = None) -> None:
     with SessionLocal() as session:
         corpus_snapshot = capture_corpus_snapshot(session)
         validate_manifest_matches_corpus(ingestion_manifest, corpus_snapshot)
+        retrieval_cases, skipped_cases = router_retrieval_cases(cases)
         report = evaluate(
             session,
             client,
-            cases,
+            retrieval_cases,
             top_k=args.top_k,
             mode=args.mode,
             case_set_id=case_set_id,
@@ -309,6 +322,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         finished_at=finished_at,
         corpus_snapshot=corpus_snapshot,
         ingestion_manifest=ingestion_manifest,
+        skipped_case_ids=[case.case_id for case in skipped_cases],
     )
     print(format_report(report))
     print(f"Raw artifacts: {run_dir}")

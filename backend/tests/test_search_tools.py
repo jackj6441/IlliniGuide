@@ -82,8 +82,19 @@ def test_normalizes_and_deduplicates_course_ids() -> None:
     assert result.course_ids == ["ECE 408"]
 
 
-def test_direct_course_id_in_query_becomes_metadata_filter() -> None:
+def test_direct_course_id_in_query_reaches_hybrid_metadata_filter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     session = FakeSession([_make_course()])
+    observed: dict[str, list[str] | None] = {}
+
+    def fake_hybrid_search(session, query, client, *, course_ids, top_k):
+        observed["course_ids"] = course_ids
+        return [], []
+
+    monkeypatch.setattr(
+        "app.services.tools.search_tools.hybrid_search", fake_hybrid_search
+    )
 
     result = search_course_docs(
         session,
@@ -91,10 +102,22 @@ def test_direct_course_id_in_query_becomes_metadata_filter() -> None:
     )
 
     assert result.course_ids == ["ECE 408"]
+    assert observed["course_ids"] == ["ECE 408"]
 
 
-def test_unknown_direct_course_id_returns_scoped_no_evidence_note() -> None:
-    session = FakeSession([])
+def test_unknown_direct_course_id_returns_scoped_no_evidence_note(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session = FakeSession([_make_course(course_id="ECE 391")])
+    observed: dict[str, list[str] | None] = {}
+
+    def fake_hybrid_search(session, query, client, *, course_ids, top_k):
+        observed["course_ids"] = course_ids
+        return [], []
+
+    monkeypatch.setattr(
+        "app.services.tools.search_tools.hybrid_search", fake_hybrid_search
+    )
 
     result = search_course_docs(
         session,
@@ -102,10 +125,22 @@ def test_unknown_direct_course_id_returns_scoped_no_evidence_note() -> None:
     )
 
     assert result.docs == []
+    assert observed["course_ids"] == ["ECE 999"]
     assert result.notes == [
         "No evidence found for requested course ID(s): ECE 999. "
         "The course may be outside the current catalog coverage.",
     ]
+
+
+def test_rejects_conflicting_explicit_and_query_course_ids() -> None:
+    with pytest.raises(ValueError, match="must match course IDs in query"):
+        search_course_docs(
+            FakeSession([_make_course()]),
+            SearchCourseDocsRequest(
+                query="Tell me about ECE 999.",
+                course_ids=["ECE 391"],
+            ),
+        )
 
 
 def test_empty_query_raises() -> None:
