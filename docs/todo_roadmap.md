@@ -25,7 +25,7 @@ This roadmap is deliberately evidence-first. A feature can be implemented in cod
 | Semantic RAG code | Partial | A real MiniLM run embedded 1,057 chunks from 367 courses; current production-router-aligned semantic Recall@3 is 20/22 (90.9%), unfiltered discovery Recall@3 is 8/10 (80.0%), and unsupported safety is 4/4. |
 | LLM serving | Implemented | Self-hosted **Qwen2.5-7B-Instruct** on one ICRN H200 through vLLM, `float16`, 8K context, prefix caching. |
 | Streaming UI | Implemented | Backend SSE and frontend incremental rendering/cancellation exist; the frontend production build has passed. |
-| Load benchmark | Partial | A 10-concurrency run recorded streaming p50 TTFT 55 ms and blocking p50 472 ms. Saved results do not yet establish tokens/sec, error rate, or GPU compute utilization. |
+| Load benchmark | Partial | The harness now writes per-request JSON, summary, and manifest with `--output-dir`; the existing 10-concurrency notes still do not establish a new artifact-backed tokens/sec, error-rate, or GPU-utilization result. |
 | Observability | Partial | `/metrics` now exposes application request/error counters, HTTP/tool/retrieval/LLM latency, and streaming TTFT; a timestamped `nvidia-smi` sampler exists, while same-window runs, Prometheus scraping, and Grafana remain unverified. |
 | Docker | Partial | Dockerfiles are uncommitted WIP and lack a clean-environment compose smoke test. |
 | Kubernetes | Planned | `infra/k8s/` has no manifests or recovery evidence. |
@@ -170,7 +170,7 @@ The phrase “observed 65–70% GPU utilization” is allowed only if the raw sa
 
 ### 3A. Standard benchmark matrix
 
-- [ ] Add an output option to `backend/scripts/benchmark.py` that writes raw per-request JSON/CSV and a run manifest. Do not rely on copied terminal text.
+- [x] Add an output option to `backend/scripts/benchmark.py` that writes raw per-request JSON, summary JSON, and a run manifest. Do not rely on copied terminal text.
 - [ ] Capture the git commit, model ID, vLLM version, launch flags, embedding model, dataset version, request timeout, warmup, prompt set, and timestamp for each run.
 - [ ] Run and save the following matrix:
 

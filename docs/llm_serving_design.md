@@ -236,13 +236,17 @@ python -m scripts.benchmark --endpoint stream --concurrency 10 --total-requests 
 python -m scripts.benchmark --endpoint chat --concurrency 10 --total-requests 50
 ```
 
-These commands make the workload shape explicit, but they are not a substitute for the missing raw per-request artifact and environment manifest. The values above are therefore retained as historical notes rather than promoted to a resume-grade benchmark package.
+These commands make the workload shape explicit. Add `--output-dir
+artifacts/benchmark/<run-id>` to persist raw per-request results, summary
+percentiles, and a run manifest. No new H200 artifact has been run with this
+writer yet, so the historical values above remain notes rather than a
+resume-grade benchmark package.
 
 In the current harness, `--warmup 3` means the first three scheduled request indices are excluded from aggregation. They are launched through the same semaphore/gather run as counted traffic; this is **not** a separate pre-run warmup phase and must not be described as a warm steady-state measurement.
 
 Interview notes in `docs/interview_notes_vllm.md` include the resume bullet, a 60-second pitch, 16 L1/L2/L3 questions grounded in these measurements (including the burst-behavior walkthrough), explicit tradeoffs, and failure modes.
 
-- `backend/scripts/benchmark.py` — self-contained concurrent load test built on `httpx.AsyncClient`. It can calculate client-observed TTFT, total latency, approximate output throughput, and error rate for blocking and streaming paths.
+- `backend/scripts/benchmark.py` — self-contained concurrent load test built on `httpx.AsyncClient`. It calculates client-observed TTFT, total latency, client-reported output throughput, and error rate for blocking and streaming paths; `--output-dir` persists raw results and a manifest.
 - `docs/interview_notes_vllm.md` — records the measured latency distributions and explains the cold-burst tail.
 
 The existing saved notes establish the latency numbers above, but do **not** preserve defensible resume values for aggregate tokens/sec, error rate, or GPU compute utilization. The current throughput calculation is approximate, and the run was not saved as structured JSON/CSV with a manifest. These remain Partial rather than inferred from the script's capability.

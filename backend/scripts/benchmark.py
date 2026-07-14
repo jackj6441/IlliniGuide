@@ -34,8 +34,11 @@ import argparse
 import asyncio
 import json
 import os
+import subprocess
 import sys
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
+from pathlib import Path
 from time import perf_counter
 
 import httpx
@@ -69,6 +72,7 @@ class BenchmarkConfig:
     warmup: int
     request_timeout: float
     debug: bool = False
+    output_dir: Path | None = None
 
 
 def _parse_args() -> BenchmarkConfig:
@@ -90,6 +94,11 @@ def _parse_args() -> BenchmarkConfig:
     )
     parser.add_argument("--request-timeout", type=float, default=120.0)
     parser.add_argument(
+        "--output-dir",
+        type=Path,
+        help="Write per-request JSON, summary JSON, and a run manifest here.",
+    )
+    parser.add_argument(
         "--debug",
         action="store_true",
         help="Ask backend to include debug_trace (adds latency; off by default).",
@@ -103,6 +112,7 @@ def _parse_args() -> BenchmarkConfig:
         warmup=args.warmup,
         request_timeout=args.request_timeout,
         debug=args.debug,
+        output_dir=args.output_dir,
     )
 
 
@@ -239,27 +249,70 @@ def _percentile(sorted_values: list[int], pct: int) -> int | None:
     return sorted_values[idx]
 
 
-def _print_report(config: BenchmarkConfig, results: list[RequestResult]) -> None:
+def _build_summary(
+    config: BenchmarkConfig,
+    results: list[RequestResult],
+    *,
+    started_at_utc: str,
+    completed_at_utc: str,
+) -> dict:
     counted = [r for r in results if r.counted]
     errors = [r for r in counted if r.error]
     successes = [r for r in counted if not r.error]
-
-    ttfts = sorted(
-        r.ttft_ms for r in successes if r.ttft_ms is not None
-    )
+    ttfts = sorted(r.ttft_ms for r in successes if r.ttft_ms is not None)
     latencies = sorted(
         r.total_latency_ms for r in successes if r.total_latency_ms is not None
     )
     total_tokens = sum(r.completion_tokens or 0 for r in successes)
+    started = datetime.fromisoformat(started_at_utc)
+    completed = datetime.fromisoformat(completed_at_utc)
+    wall_duration_seconds = max(0.0, (completed - started).total_seconds())
 
-    # Wall duration is the max end time minus start; approximate with sum of
-    # latencies divided by concurrency to keep this dependency-free
-    if latencies:
-        wall_duration_s = max(latencies) / 1000 * (len(successes) / max(config.concurrency, 1))
-        # Better: run-clock. We don't have it here without more bookkeeping;
-        # keep the simple form and label as approx.
-    else:
-        wall_duration_s = 0.0
+    return {
+        "total_requests": len(results),
+        "counted_requests": len(counted),
+        "warmup_requests": len(results) - len(counted),
+        "successful_requests": len(successes),
+        "error_requests": len(errors),
+        "error_rate": len(errors) / len(counted) if counted else None,
+        "ttft_ms": {
+            "p50": _percentile(ttfts, 50),
+            "p95": _percentile(ttfts, 95),
+            "p99": _percentile(ttfts, 99),
+            "sample_count": len(ttfts),
+        },
+        "total_latency_ms": {
+            "p50": _percentile(latencies, 50),
+            "p95": _percentile(latencies, 95),
+            "p99": _percentile(latencies, 99),
+            "sample_count": len(latencies),
+        },
+        "output_tokens": total_tokens,
+        "wall_duration_seconds": wall_duration_seconds,
+        "output_tokens_per_second": (
+            total_tokens / wall_duration_seconds
+            if total_tokens and wall_duration_seconds > 0
+            else None
+        ),
+        "throughput_note": (
+            "client completion_tokens over wall-clock run duration"
+            if total_tokens
+            else "no completion token counts reported"
+        ),
+        "started_at_utc": started_at_utc,
+        "completed_at_utc": completed_at_utc,
+        "endpoint": f"/api/chat{'/stream' if config.endpoint == 'stream' else ''}",
+        "concurrency": config.concurrency,
+    }
+
+
+def _print_report(
+    config: BenchmarkConfig,
+    results: list[RequestResult],
+    summary: dict,
+) -> None:
+    counted = [r for r in results if r.counted]
+    errors = [r for r in counted if r.error]
 
     print("\n=== IlliniGuide benchmark ===")
     print(f"endpoint:      /api/chat{'/stream' if config.endpoint == 'stream' else ''}")
@@ -272,21 +325,75 @@ def _print_report(config: BenchmarkConfig, results: list[RequestResult]) -> None
     if len(counted) > 0:
         print(f"errors:        {len(errors)} ({len(errors) / len(counted) * 100:.1f}%)")
 
-    if ttfts:
+    if summary["ttft_ms"]["sample_count"]:
         print("\nTTFT (client-perceived first token):")
-        print(f"  p50 = {_percentile(ttfts, 50):>6} ms")
-        print(f"  p95 = {_percentile(ttfts, 95):>6} ms")
-        print(f"  p99 = {_percentile(ttfts, 99):>6} ms")
+        print(f"  p50 = {summary['ttft_ms']['p50']:>6} ms")
+        print(f"  p95 = {summary['ttft_ms']['p95']:>6} ms")
+        print(f"  p99 = {summary['ttft_ms']['p99']:>6} ms")
 
-    if latencies:
+    if summary["total_latency_ms"]["sample_count"]:
         print("\nTotal latency (full response):")
-        print(f"  p50 = {_percentile(latencies, 50):>6} ms")
-        print(f"  p95 = {_percentile(latencies, 95):>6} ms")
-        print(f"  p99 = {_percentile(latencies, 99):>6} ms")
+        print(f"  p50 = {summary['total_latency_ms']['p50']:>6} ms")
+        print(f"  p95 = {summary['total_latency_ms']['p95']:>6} ms")
+        print(f"  p99 = {summary['total_latency_ms']['p99']:>6} ms")
 
-    if total_tokens > 0 and wall_duration_s > 0:
-        print("\nThroughput (approximate):")
-        print(f"  aggregate output: {total_tokens / wall_duration_s:.1f} tok/s")
+    if summary["output_tokens_per_second"] is not None:
+        print("\nThroughput (client-reported):")
+        print(f"  aggregate output: {summary['output_tokens_per_second']:.1f} tok/s")
+
+
+def _git_sha() -> str:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"
+    return result.stdout.strip() or "unknown"
+
+
+def _write_artifacts(
+    config: BenchmarkConfig,
+    results: list[RequestResult],
+    summary: dict,
+) -> Path | None:
+    if config.output_dir is None:
+        return None
+    config.output_dir.mkdir(parents=True, exist_ok=True)
+    per_request_path = config.output_dir / "per_request_results.json"
+    summary_path = config.output_dir / "summary.json"
+    manifest_path = config.output_dir / "run_manifest.json"
+    per_request_path.write_text(
+        json.dumps([asdict(result) for result in results], indent=2) + "\n",
+        encoding="utf-8",
+    )
+    summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    manifest = {
+        "schema_version": 1,
+        "git_sha": _git_sha(),
+        "command": "python -m scripts.benchmark " + " ".join(sys.argv[1:]),
+        "backend_url": config.backend_url,
+        "endpoint": config.endpoint,
+        "concurrency": config.concurrency,
+        "total_requests": config.total_requests,
+        "warmup": config.warmup,
+        "request_timeout_seconds": config.request_timeout,
+        "debug": config.debug,
+        "files": [
+            per_request_path.name,
+            summary_path.name,
+            manifest_path.name,
+        ],
+        "summary": summary,
+    }
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return config.output_dir
 
 
 def main() -> int:
@@ -295,8 +402,19 @@ def main() -> int:
         f"→ warmup {config.warmup} + {config.total_requests - config.warmup} counted "
         f"requests, concurrency={config.concurrency}, endpoint={config.endpoint}"
     )
+    started_at_utc = datetime.now(UTC).isoformat()
     results = asyncio.run(_run(config))
-    _print_report(config, results)
+    completed_at_utc = datetime.now(UTC).isoformat()
+    summary = _build_summary(
+        config,
+        results,
+        started_at_utc=started_at_utc,
+        completed_at_utc=completed_at_utc,
+    )
+    _print_report(config, results, summary)
+    artifact_dir = _write_artifacts(config, results, summary)
+    if artifact_dir:
+        print(f"Artifacts: {artifact_dir}")
     return 0
 
 
