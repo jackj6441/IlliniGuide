@@ -43,3 +43,19 @@ def test_metrics_record_chat_tool_status_and_latency() -> None:
     assert 'tool="get_course_profile"' in body
     assert 'status="success"' in body
     assert "illiniguideserve_tool_latency_seconds" in body
+
+
+def test_metrics_record_streaming_time_to_first_token() -> None:
+    client = TestClient(create_app())
+
+    with client.stream(
+        "POST",
+        "/api/chat/stream",
+        json={"message": "What is ECE 391 about?"},
+    ) as response:
+        assert response.status_code == 200
+        response.read()
+
+    body = client.get("/metrics").text
+    assert "illiniguideserve_stream_ttft_seconds" in body
+    assert 'backend="mock"' in body

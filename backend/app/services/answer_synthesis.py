@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator
 from time import perf_counter
 
 from app.services.llm.client import LLMClient
+from app.observability.metrics import observe_stream_ttft
 from app.services.llm.prompt_templates import build_prompt_messages
 from app.services.tools.dispatcher import DispatchedResults
 from app.services.tools.trace import ToolTraceCollector
@@ -83,11 +84,19 @@ async def stream_answer(
 
     started_at = perf_counter()
     chunks_yielded = 0
+    first_chunk_at: float | None = None
     stream_error: str | None = None
 
     try:
         async for chunk in llm_client.stream_generate(messages):
             chunks_yielded += 1
+            if first_chunk_at is None and chunk:
+                first_chunk_at = perf_counter()
+                observe_stream_ttft(
+                    backend=llm_client.backend_name,
+                    model=llm_client.model_name,
+                    duration_seconds=first_chunk_at - started_at,
+                )
             yield chunk
     except Exception as exc:
         stream_error = f"{type(exc).__name__}: {exc}"

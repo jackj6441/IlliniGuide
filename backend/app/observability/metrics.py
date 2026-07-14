@@ -39,6 +39,12 @@ TOOL_LATENCY = Histogram(
     ("tool",),
     registry=REGISTRY,
 )
+STREAM_TTFT = Histogram(
+    "illiniguideserve_stream_ttft_seconds",
+    "Time from stream start until the first non-empty content chunk.",
+    ("backend", "model"),
+    registry=REGISTRY,
+)
 
 
 def observe_http_request(
@@ -71,6 +77,18 @@ def observe_tool_calls(calls: Iterable[ToolCallTrace]) -> None:
         )
 
 
+def observe_stream_ttft(
+    *,
+    backend: str,
+    model: str,
+    duration_seconds: float,
+) -> None:
+    """Record time-to-first-token for a stream that emitted content."""
+    STREAM_TTFT.labels(backend=backend, model=model).observe(
+        max(0.0, duration_seconds)
+    )
+
+
 def render_metrics() -> bytes:
     """Return the registry in Prometheus text exposition format."""
     return generate_latest(REGISTRY)
@@ -78,6 +96,7 @@ def render_metrics() -> bytes:
 
 __all__ = [
     "observe_http_request",
+    "observe_stream_ttft",
     "observe_tool_calls",
     "render_metrics",
 ]
