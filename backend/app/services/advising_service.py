@@ -17,6 +17,7 @@ from app.schemas import (
 )
 from app.services.answer_synthesis import build_answer, stream_answer
 from app.services.llm import LLMClient, create_llm_client
+from app.observability.metrics import observe_tool_calls
 from app.services.rag.citation import citation_from_chunk
 from app.services.rag.retriever import (
     RetrievedChunk,
@@ -50,6 +51,7 @@ async def build_chat_response(
     answer = await build_answer(
         plan.intent, request.message, results, client, collector
     )
+    observe_tool_calls(collector.tool_calls())
     latency_ms = int((perf_counter() - start) * 1000)
 
     return ChatResponse(
@@ -97,6 +99,7 @@ async def build_chat_response_stream(
     ):
         yield _sse_event({"type": "content", "delta": chunk})
 
+    observe_tool_calls(collector.tool_calls())
     latency_ms = int((perf_counter() - start) * 1000)
     metadata: dict = {
         "type": "metadata",

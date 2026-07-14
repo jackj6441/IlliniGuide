@@ -295,7 +295,7 @@ Status: Implemented
 
 Purpose:
 
-`ToolTraceCollector` is the single source of truth for what tools ran on a request, in what order, with what arguments, how long each took, and whether it succeeded. The collector is populated on every request; the serialized `DebugTrace` is only attached to the response when `debug=true`. The same collector will later feed Prometheus metrics and structured logs (Phase E), so instrumentation is not duplicated.
+`ToolTraceCollector` is the single source of truth for what tools ran on a request, in what order, with what arguments, how long each took, and whether it succeeded. The collector is populated on every request; the serialized `DebugTrace` is only attached to the response when `debug=true`. The same collector now feeds the first Prometheus tool counters and latency histograms; structured logs and richer retrieval/LLM/TTFT metrics remain Phase E work, so instrumentation is not duplicated.
 
 Design:
 

@@ -26,7 +26,7 @@ This roadmap is deliberately evidence-first. A feature can be implemented in cod
 | LLM serving | Implemented | Self-hosted **Qwen2.5-7B-Instruct** on one ICRN H200 through vLLM, `float16`, 8K context, prefix caching. |
 | Streaming UI | Implemented | Backend SSE and frontend incremental rendering/cancellation exist; the frontend production build has passed. |
 | Load benchmark | Partial | A 10-concurrency run recorded streaming p50 TTFT 55 ms and blocking p50 472 ms. Saved results do not yet establish tokens/sec, error rate, or GPU compute utilization. |
-| Observability | Partial | Per-tool debug trace and a vLLM `/metrics` snapshot script exist; no Prometheus scrape, Grafana dashboard, or application metrics endpoint is verified. |
+| Observability | Partial | `/metrics` now exposes application request/error counters, HTTP latency, and tool status/latency metrics; Prometheus scraping, retrieval/LLM/TTFT histograms, GPU telemetry, and Grafana remain unverified. |
 | Docker | Partial | Dockerfiles are uncommitted WIP and lack a clean-environment compose smoke test. |
 | Kubernetes | Planned | `infra/k8s/` has no manifests or recovery evidence. |
 | Evaluation | Partial | The frozen 34-case evaluation runs against local Docker/PostgreSQL; the production router evaluates 22 RAG evidence cases plus four safety cases. Current semantic Recall@3 is 20/22 (90.9%), unfiltered discovery is 8/10 (80.0%), and unsupported safety is 4/4. See `docs/benchmark_report.md`. |
@@ -127,7 +127,7 @@ After 1A, the resume may say “indexed 150+ department courses.” After 1C, it
 
 ## Phase 2 — Finish observability and GPU telemetry
 
-**Status:** Planned
+**Status:** Partial — application metrics endpoint and basic request/tool instrumentation are implemented; vLLM/GPU telemetry and dashboarding remain planned.
 
 **Effort:** 1–2 days
 
@@ -135,10 +135,10 @@ After 1A, the resume may say “indexed 150+ department courses.” After 1C, it
 
 ### 2A. Application metrics
 
-- [ ] Add a minimal Prometheus metrics endpoint without bypassing the route/service layering.
-- [ ] Record request count and error count by endpoint/status.
-- [ ] Record histograms for end-to-end latency, retrieval latency, each tool latency, LLM latency, and streaming TTFT.
-- [ ] Record tool success/failure counters by tool name.
+- [x] Add a minimal Prometheus metrics endpoint without bypassing the route/service layering.
+- [x] Record request count and error count by endpoint/status.
+- [ ] Record histograms for retrieval latency, LLM latency, and streaming TTFT; the first slice records HTTP and per-tool latency.
+- [x] Record tool success/failure counters by tool name.
 - [ ] Add service-level tests covering success, failure, missing metadata, and histogram observation.
 
 ### 2B. vLLM and GPU metrics

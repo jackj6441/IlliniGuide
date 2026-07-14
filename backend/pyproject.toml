@@ -5,6 +5,7 @@ description = "FastAPI backend for IlliniGuide Serve."
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",
+    "prometheus-client>=0.20.0",
     "pgvector>=0.3.6",
     "psycopg[binary]>=3.2.0",
     "pydantic>=2.8.0",

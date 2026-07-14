@@ -118,6 +118,10 @@ class ToolTraceCollector:
     def tool_names(self) -> list[str]:
         return [call.tool_name for call in self._tool_calls]
 
+    def tool_calls(self) -> tuple[ToolCallTrace, ...]:
+        """Return immutable trace entries for observability consumers."""
+        return tuple(self._tool_calls)
+
     def notes(self) -> list[str]:
         return list(self._notes)
 

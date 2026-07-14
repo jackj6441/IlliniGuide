@@ -252,7 +252,9 @@ The existing saved notes establish the latency numbers above, but do **not** pre
 Status: Partial
 
 - Implemented: a pedagogical vLLM `/metrics` snapshot helper for selected server counters.
-- Missing: application Prometheus metrics for request/error counts, end-to-end/retrieval/tool/LLM latency, and streaming TTFT.
+- Partial: application Prometheus metrics now cover request/error counts, HTTP
+  latency, and tool latency/status. Missing: retrieval/LLM latency and
+  streaming TTFT histograms.
 - Missing: Prometheus scrape configuration and a verified Grafana dashboard.
 - Missing: same-window GPU compute utilization sampling, VRAM usage, KV-cache utilization, queue depth, structured benchmark output, and a counted-request error denominator.
 
