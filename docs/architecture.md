@@ -35,7 +35,7 @@ The route layer owns HTTP parsing and response types. Business orchestration sta
 | Self-hosted inference | Implemented | The verified baseline is Qwen2.5-7B-Instruct, FP16, 8K context, served through vLLM on an ICRN H200 with prefix caching. |
 | Streaming | Implemented | The backend emits content and metadata SSE events. The React client parses them, renders incrementally, and supports cancellation; its production build previously passed. |
 | Benchmarking | Partial | The harness measures streaming TTFT and total latency. Historical notes record streaming p50 client-observed TTFT 55 ms and blocking p50 full-response latency 472 ms at concurrency 10, with 47 counted requests per run; exact command shape and limitations are documented in `llm_serving_design.md`. Saved tokens/sec, error-rate, and GPU-utilization results do not yet exist. |
-| Observability | Partial | `/metrics` exposes application request/error counters, HTTP/tool latency, and streaming TTFT. Prometheus scraping, retrieval/LLM breakdowns, GPU telemetry, and Grafana dashboards are not yet verified. |
+| Observability | Partial | `/metrics` exposes application request/error counters, HTTP/tool/retrieval/LLM latency, and streaming TTFT. Prometheus scraping, GPU telemetry, and Grafana dashboards are not yet verified. |
 | Evaluation | Partial | The frozen 34-case set is evaluated as 22 RAG evidence cases plus four safety cases; current semantic Recall@3 is 20/22 (90.9%) and unsupported safety is 4/4. |
 | Docker | Partial | Backend and frontend image files are WIP in the working tree; a clean Compose smoke test has not been recorded. |
 | Kubernetes | Planned | No manifests, rollout test, or pod-recovery evidence exists. |
