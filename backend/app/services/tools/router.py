@@ -6,7 +6,10 @@ from app.services.tools.schemas import ToolCall, ToolPlan
 
 
 PREREQ_PATTERN = re.compile(
-    r"\b(prereq|prerequisite|prerequisites|ready for|can i take|am i ready)\b",
+    r"\b("
+    r"prereq|prerequisite|prerequisites|ready for|can i take|am i ready|"
+    r"classes must i complete before|before taking|prior coursework"
+    r")\b",
     re.IGNORECASE,
 )
 RECOMMEND_PATTERN = re.compile(

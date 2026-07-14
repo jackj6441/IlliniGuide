@@ -89,6 +89,21 @@ def test_prereq_check_with_course() -> None:
     }
 
 
+@pytest.mark.parametrize(
+    "query",
+    [
+        "Which classes must I complete before ECE 391?",
+        "What do I need before taking ECE 411?",
+        "What prior coursework is required for ECE 470?",
+    ],
+)
+def test_prerequisite_phrasings_route_to_structured_tool(query: str) -> None:
+    plan = plan_tools(query)
+
+    assert plan.intent == "prereq_check"
+    assert _tool_names(plan) == ["check_prerequisites"]
+
+
 def test_prereq_check_without_course_downgrades() -> None:
     plan = plan_tools("Am I ready for that class?")
 
