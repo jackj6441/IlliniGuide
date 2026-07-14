@@ -206,7 +206,9 @@ def search_course_chunks_by_keyword(
 
     ranked.sort(key=lambda chunk: chunk.score, reverse=True)
     top_chunks = ranked[:top_k]
-    if top_chunks and not course_ids and not has_catalog_signal(query, top_chunks):
+    if top_chunks and not (course_ids or extract_course_ids(query)) and not has_catalog_signal(
+        query, top_chunks
+    ):
         return []
     return top_chunks
 
