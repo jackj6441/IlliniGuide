@@ -43,6 +43,8 @@ def test_metrics_record_chat_tool_status_and_latency() -> None:
     assert 'tool="get_course_profile"' in body
     assert 'status="success"' in body
     assert "illiniguideserve_tool_latency_seconds" in body
+    assert "illiniguideserve_retrieval_latency_seconds" in body
+    assert "illiniguideserve_llm_latency_seconds" in body
 
 
 def test_metrics_record_streaming_time_to_first_token() -> None:

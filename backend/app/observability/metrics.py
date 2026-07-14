@@ -39,6 +39,18 @@ TOOL_LATENCY = Histogram(
     ("tool",),
     registry=REGISTRY,
 )
+RETRIEVAL_LATENCY = Histogram(
+    "illiniguideserve_retrieval_latency_seconds",
+    "Course-document retrieval latency in seconds.",
+    ("retriever",),
+    registry=REGISTRY,
+)
+LLM_LATENCY = Histogram(
+    "illiniguideserve_llm_latency_seconds",
+    "LLM generation latency in seconds.",
+    ("backend", "model"),
+    registry=REGISTRY,
+)
 STREAM_TTFT = Histogram(
     "illiniguideserve_stream_ttft_seconds",
     "Time from stream start until the first non-empty content chunk.",
@@ -71,10 +83,18 @@ def observe_http_request(
 def observe_tool_calls(calls: Iterable[ToolCallTrace]) -> None:
     """Record tool trace entries after a request finishes its pipeline."""
     for call in calls:
+        duration_seconds = max(0.0, call.latency_ms / 1000.0)
         TOOL_CALLS.labels(tool=call.tool_name, status=call.status).inc()
-        TOOL_LATENCY.labels(tool=call.tool_name).observe(
-            max(0.0, call.latency_ms / 1000.0)
-        )
+        TOOL_LATENCY.labels(tool=call.tool_name).observe(duration_seconds)
+        if call.tool_name == "search_course_docs":
+            RETRIEVAL_LATENCY.labels(retriever="course_docs").observe(
+                duration_seconds
+            )
+        if call.tool_name in {"llm_generate", "llm_generate_stream"}:
+            LLM_LATENCY.labels(
+                backend=str(call.arguments.get("backend", "unknown")),
+                model=str(call.arguments.get("model", "unknown")),
+            ).observe(duration_seconds)
 
 
 def observe_stream_ttft(
