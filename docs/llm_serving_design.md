@@ -256,7 +256,10 @@ Status: Partial
   HTTP/tool/retrieval/LLM latency/status, and streaming TTFT. Missing:
   Prometheus scraping and Grafana.
 - Missing: Prometheus scrape configuration and a verified Grafana dashboard.
-- Missing: same-window GPU compute utilization sampling, VRAM usage, KV-cache utilization, queue depth, structured benchmark output, and a counted-request error denominator.
+- Partial: `scripts/gpu_sampler.py` can capture timestamped GPU compute utilization
+  and VRAM usage CSV. Missing: a same-window load-test run, KV-cache/queue
+  correlation, structured benchmark output, and a counted-request error
+  denominator.
 
 `--gpu-memory-utilization 0.85` must never be reported as “85% GPU utilization.” Resume claims such as “65–70% GPU utilization” require timestamped compute-utilization samples from the same named load run.
 
