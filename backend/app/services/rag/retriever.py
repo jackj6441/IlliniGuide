@@ -155,9 +155,10 @@ def search_course_docs_from_db(
 
     ranked.sort(key=lambda chunk: chunk.score, reverse=True)
     if ranked:
-        if not query_course_ids and not has_catalog_signal(query, ranked):
+        top_chunks = ranked[:top_k]
+        if not query_course_ids and not has_catalog_signal(query, top_chunks):
             return []
-        return ranked[:top_k]
+        return top_chunks
     return search_course_docs(query, course_ids=course_ids, top_k=top_k)
 
 
@@ -204,9 +205,10 @@ def search_course_chunks_by_keyword(
             )
 
     ranked.sort(key=lambda chunk: chunk.score, reverse=True)
-    if ranked and not course_ids and not has_catalog_signal(query, ranked):
+    top_chunks = ranked[:top_k]
+    if top_chunks and not course_ids and not has_catalog_signal(query, top_chunks):
         return []
-    return ranked[:top_k]
+    return top_chunks
 
 
 def _score_chunk(query_tokens: set[str], chunk: SampleChunk) -> float:
