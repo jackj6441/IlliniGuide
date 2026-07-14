@@ -19,6 +19,7 @@ from app.db.models import Course
 
 _CAREER_TAG_LABELS: dict[str, str] = {
     "ai_infra": "AI infrastructure",
+    "gpu_programming": "GPU programming and CUDA",
     "systems": "systems engineering",
     "software": "software engineering",
     "hardware": "hardware engineering",

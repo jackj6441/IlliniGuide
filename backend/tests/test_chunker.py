@@ -78,6 +78,12 @@ def test_career_tags_single_produces_singular_phrase() -> None:
     assert doc.metadata["career_tags"] == ["ai_infra"]
 
 
+def test_gpu_programming_tag_uses_explicit_cuda_label() -> None:
+    course = _make_course(career_tags=["gpu_programming"])
+    docs = chunk_course(course)
+    assert "GPU programming and CUDA roles" in docs[0].text
+
+
 def test_career_tags_two_uses_or_conjunction() -> None:
     course = _make_course(career_tags=["ai_infra", "systems"])
     docs = chunk_course(course)

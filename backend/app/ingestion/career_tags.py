@@ -10,7 +10,7 @@ CORE_COURSE_TAGS: dict[str, list[str]] = {
     "ECE 385": ["systems", "computer_architecture"],
     "ECE 391": ["systems", "software_engineering"],
     "ECE 407": ["security"],
-    "ECE 408": ["ai_infra", "systems"],
+    "ECE 408": ["ai_infra", "gpu_programming", "systems"],
     "ECE 411": ["computer_architecture", "systems", "ai_infra"],
     "ECE 419": ["security"],
     "ECE 422": ["security"],

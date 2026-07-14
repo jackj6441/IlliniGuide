@@ -1,4 +1,8 @@
-from app.ingestion.career_tags import seed_core_career_tags
+from app.ingestion.career_tags import CORE_COURSE_TAGS, seed_core_career_tags
+
+
+def test_core_tags_cover_gpu_programming_for_ece_408():
+    assert "gpu_programming" in CORE_COURSE_TAGS["ECE 408"]
 
 
 class FakeSession:
