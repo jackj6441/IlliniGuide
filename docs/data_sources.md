@@ -145,6 +145,32 @@ after source duplicates) and 161 CS rows, resulting in **360 distinct ECE/CS
 courses**. Its uncommitted runtime manifest is
 `backend/artifacts/ingestion/20260713T081430Z-cef53476/manifest.json`.
 
+## Official Catalog Detail Enrichment
+
+Status: Implemented; local live validation recorded
+
+The department listing source provides reliable course identity and many
+prerequisites, but its rows do not contain enough description text for semantic
+retrieval. The enrichment command reads the official department catalog pages:
+
+```text
+https://catalog.illinois.edu/courses-of-instruction/ece/
+https://catalog.illinois.edu/courses-of-instruction/cs/
+```
+
+It adds source-backed description and credit-hour fields, and preserves an
+existing prerequisite when the catalog description omits one. Run:
+
+```bash
+cd backend
+.venv/bin/python -m scripts.enrich_catalog_details
+```
+
+On 2026-07-13, this added or updated official details for 367 distinct
+ECE/CS courses. Real MiniLM ingestion then produced 1,045 chunks with only one
+course skipped; semantic unfiltered Recall@3 improved from 8/22 (36.4%) to
+9/22 (40.9%). See `docs/benchmark_report.md` for the full comparison.
+
 ## Manual Career Tags
 
 Status: Implemented for selected core courses

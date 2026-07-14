@@ -33,6 +33,8 @@ class CSCourseRecord:
     course_number: str
     title: str
     prerequisites: str | None
+    description: str | None = None
+    credit_hours: str | None = None
 
 
 CSCatalogIngestionResult = CourseIngestionResult

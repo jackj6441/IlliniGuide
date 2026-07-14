@@ -38,6 +38,8 @@ class CourseRecord(Protocol):
     course_number: str
     title: str
     prerequisites: str | None
+    description: str | None
+    credit_hours: str | None
 
 
 @dataclass(frozen=True)
@@ -137,6 +139,8 @@ def upsert_source_course(
 ) -> CourseUpsertAction:
     """Persist source-tagged course data and report whether it was created."""
     course = session.scalar(select(Course).where(Course.course_id == record.course_id))
+    description = (record.description or "").strip()
+    credit_hours = (record.credit_hours or "").strip()
     if course is None:
         session.add(
             Course(
@@ -145,6 +149,8 @@ def upsert_source_course(
                 course_number=record.course_number,
                 title=record.title,
                 prerequisites=record.prerequisites,
+                description=description or None,
+                credit_hours=credit_hours or None,
                 source_url=source_url,
             )
         )
@@ -153,7 +159,12 @@ def upsert_source_course(
     course.department = record.department
     course.course_number = record.course_number
     course.title = record.title
-    course.prerequisites = record.prerequisites
+    if record.prerequisites is not None:
+        course.prerequisites = record.prerequisites
+    if description:
+        course.description = description
+    if credit_hours:
+        course.credit_hours = credit_hours
     course.source_url = source_url
     return "updated"
 

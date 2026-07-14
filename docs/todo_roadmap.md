@@ -21,15 +21,15 @@ This roadmap is deliberately evidence-first. A feature can be implemented in cod
 |---|---|---|
 | Backend layering and structured tools | Implemented | FastAPI route -> router -> dispatcher -> tools -> answer synthesis; backend suite previously passed 223 tests. |
 | PostgreSQL schema | Implemented | `courses`, `gpa_stats`, `course_chunks`, evaluation tables, and pgvector initialization exist. |
-| Course data | Partial | A local Docker/PostgreSQL run ingested 360 deduplicated ECE/CS source-tagged courses (199 ECE, 161 CS); source enrichment and GPA coverage remain incomplete. |
-| Semantic RAG code | Partial | A real MiniLM run embedded 268 chunks from 360 courses, but 92 courses produced no chunk; the first retrieval baseline is below quality targets. |
+| Course data | Partial | Official listing plus catalog-detail ingestion produced 367 ECE/CS courses in local Docker/PostgreSQL; GPA coverage and career tags remain incomplete. |
+| Semantic RAG code | Partial | A real MiniLM run embedded 1,045 chunks from 367 courses; official-description enrichment improved unfiltered Recall@3 from 36.4% to 40.9%, still below quality targets. |
 | LLM serving | Implemented | Self-hosted **Qwen2.5-7B-Instruct** on one ICRN H200 through vLLM, `float16`, 8K context, prefix caching. |
 | Streaming UI | Implemented | Backend SSE and frontend incremental rendering/cancellation exist; the frontend production build has passed. |
 | Load benchmark | Partial | A 10-concurrency run recorded streaming p50 TTFT 55 ms and blocking p50 472 ms. Saved results do not yet establish tokens/sec, error rate, or GPU compute utilization. |
 | Observability | Partial | Per-tool debug trace and a vLLM `/metrics` snapshot script exist; no Prometheus scrape, Grafana dashboard, or application metrics endpoint is verified. |
 | Docker | Partial | Dockerfiles are uncommitted WIP and lack a clean-environment compose smoke test. |
 | Kubernetes | Planned | `infra/k8s/` has no manifests or recovery evidence. |
-| Evaluation | Partial | A frozen 34-case evaluation ran against local Docker/PostgreSQL: semantic unfiltered Recall@3 was 8/22 (36.4%); see `docs/benchmark_report.md`. |
+| Evaluation | Partial | A frozen 34-case evaluation ran against local Docker/PostgreSQL: enriched semantic unfiltered Recall@3 is 9/22 (40.9%); see `docs/benchmark_report.md`. |
 
 ## Resume claim gates
 
@@ -71,7 +71,7 @@ These are targets, not current accomplishments.
 
 ## Phase 1 — Expand and validate the RAG corpus
 
-**Status:** Partial — live local Docker corpus, MiniLM embedding, and retrieval evidence exist; source enrichment, quality improvement, and ICRN validation remain pending.
+**Status:** Partial — live local Docker corpus, official-description enrichment, MiniLM embedding, and retrieval evidence exist; direct course-ID routing, unsupported-query safety, and ICRN validation remain pending.
 
 **Effort:** 1–2 days
 
@@ -79,11 +79,11 @@ These are targets, not current accomplishments.
 
 ### 1A. Build a 150-course data gate
 
-- [ ] Select official UIUC ECE/CS source pages and document provenance, fetch date, and licensing/usage boundaries in `docs/data_sources.md`.
-- [ ] Extend ingestion until it produces at least 150 **deduplicated** course records. Do not count chunks as courses.
-- [ ] Record course counts by department and missing/failed source rows.
+- [x] Select official UIUC ECE/CS source pages and document provenance, fetch date, and licensing/usage boundaries in `docs/data_sources.md`.
+- [x] Extend ingestion until it produces at least 150 **deduplicated** course records. Do not count chunks as courses.
+- [x] Record course counts by department and missing/failed source rows.
 - [ ] Add tests for duplicate course IDs, missing source URLs, malformed prerequisites, and idempotent re-ingestion.
-- [ ] Persist the ingestion report under a versioned `artifacts/` or `docs/results/` directory (to be created in its own PR).
+- [x] Persist the ingestion report under a versioned `artifacts/` directory (runtime evidence is intentionally uncommitted).
 
 ### 1B. Run real semantic embedding ingestion
 
@@ -96,8 +96,8 @@ EMBEDDING_MODEL_NAME=sentence-transformers/all-MiniLM-L6-v2 \
 python -m scripts.ingest_embeddings
 ```
 
-- [ ] Save stdout plus course/chunk/embedding counts.
-- [ ] Confirm the `course_chunks.embedding` dimension and pgvector index agree with the embedding model.
+- [x] Save stdout plus course/chunk/embedding counts.
+- [x] Confirm the `course_chunks.embedding` dimension and pgvector index agree with the embedding model.
 - [ ] Manually inspect ten retrievals: exact course query, cross-course semantic query, unsupported query, and metadata-filtered query.
 
 ### 1C. Create a defensible retrieval evaluation
