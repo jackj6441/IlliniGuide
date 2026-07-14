@@ -25,18 +25,18 @@ The route layer owns HTTP parsing and response types. Business orchestration sta
 
 | Area | Status | Current boundary |
 |---|---|---|
-| FastAPI route/service layering | Implemented | `/health`, chat, streaming chat, compare, and recommend routes call service-layer logic. The backend suite previously passed `223` tests. |
+| FastAPI route/service layering | Implemented | `/health`, chat, streaming chat, compare, and recommend routes call service-layer logic. The backend suite passes `264` tests. |
 | Tool orchestration | Implemented | `plan_tools` produces an ordered plan; `execute_plan` calls explicit tools and isolates individual failures; answer synthesis consumes the dispatched evidence. |
 | Structured tools | Implemented | Course profile, GPA, prerequisite, comparison, recommendation, and document-search tools query deterministic data instead of asking the LLM to invent facts. |
 | PostgreSQL + pgvector | Implemented | Models and initialization exist for courses, instructors, GPA statistics, vector chunks, and evaluation records. |
-| Data corpus | Partial | The evidenced local baseline is 80 ECE courses and 20 GPA rows. CS/catalog coverage and career tags remain incomplete. |
-| Semantic RAG | Partial | Section chunking, 384-dimensional MiniLM embeddings, pgvector cosine search, course metadata filtering, keyword fallback, and a low-confidence note are implemented in code. A real labeled retrieval report is still missing. |
+| Data corpus | Partial | The current local baseline is 367 ECE/CS catalog courses and 20 GPA rows. Career tags cover 12 selected core courses; GPA breadth remains bounded. |
+| Semantic RAG | Partial | Section chunking, 384-dimensional MiniLM embeddings, pgvector cosine search, course metadata filtering, scope guard, keyword fallback, and a low-confidence note are implemented. The current local report is retrieval evidence, not answer quality or an ICRN/H200 benchmark. |
 | LLM client abstraction | Implemented | `mock`, `vllm_remote`, and `external_debug` backends are separated behind one client interface. The external backend is only a debug fallback. |
 | Self-hosted inference | Implemented | The verified baseline is Qwen2.5-7B-Instruct, FP16, 8K context, served through vLLM on an ICRN H200 with prefix caching. |
 | Streaming | Implemented | The backend emits content and metadata SSE events. The React client parses them, renders incrementally, and supports cancellation; its production build previously passed. |
 | Benchmarking | Partial | The harness measures streaming TTFT and total latency. Historical notes record streaming p50 client-observed TTFT 55 ms and blocking p50 full-response latency 472 ms at concurrency 10, with 47 counted requests per run; exact command shape and limitations are documented in `llm_serving_design.md`. Saved tokens/sec, error-rate, and GPU-utilization results do not yet exist. |
 | Observability | Partial | Per-tool debug trace and a vLLM `/metrics` snapshot script exist. Application metrics, Prometheus scraping, and Grafana dashboards are not yet verified. |
-| Evaluation | Partial | Retrieval evaluation code exists, but the frozen 30–50-query advisor set and saved result report do not. |
+| Evaluation | Partial | The frozen 34-case set is evaluated as 22 RAG evidence cases plus four safety cases; current semantic Recall@3 is 20/22 (90.9%) and unsupported safety is 4/4. |
 | Docker | Partial | Backend and frontend image files are WIP in the working tree; a clean Compose smoke test has not been recorded. |
 | Kubernetes | Planned | No manifests, rollout test, or pod-recovery evidence exists. |
 
@@ -58,7 +58,9 @@ The route layer owns HTTP parsing and response types. Business orchestration sta
 - Section-aware course chunking and embedding persistence.
 - Semantic pgvector search with course filters, keyword fallback, and citation-oriented retrieval results.
 
-The retriever code being present does not prove retrieval quality. Semantic RAG remains Partial until a real database run produces a versioned, labeled evaluation artifact.
+The retriever code being present does not prove answer quality. Semantic RAG
+remains Partial because the current report is a local retrieval-evidence run,
+not an ICRN/H200 deployment benchmark or generated-answer evaluation.
 
 ### LLM serving and streaming
 

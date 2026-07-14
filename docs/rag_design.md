@@ -1,6 +1,8 @@
 # RAG Design
 
-Status: Partial — semantic retrieval code is implemented and unit-tested, but a reproducible live retrieval-quality report is still missing.
+Status: Partial — semantic retrieval, scope safety, and a reproducible local
+quality report are implemented; broader corpus coverage and ICRN validation
+remain pending.
 
 IlliniGuide uses a handwritten retrieval pipeline rather than making LangChain the core architecture. Structured facts such as prerequisites and GPA are handled by deterministic tools; course descriptions and advising context can be retrieved from cited `course_chunks` evidence.
 
@@ -17,7 +19,7 @@ IlliniGuide uses a handwritten retrieval pipeline rather than making LangChain t
 | Low-confidence signaling | Implemented | A top semantic similarity below `0.35` adds an explicit grounding warning. It does not silently promote weak evidence to a correct answer. |
 | Citation conversion | Implemented | Retrieved chunks preserve course, source, section, snippet, and score fields for downstream citations. |
 | Retrieval tests | Implemented | Unit tests cover chunking, embedding behavior, pgvector query construction, filtering, low-confidence notes, empty semantic fallback, and evaluation scoring without requiring a live database. |
-| Live retrieval evaluation | Partial | An initial 8-case retrieval harness exists, but the repository does not yet contain the planned 30–50-case advisor set or a saved ICRN run proving Recall@k, citation correctness, fallback correctness, or a pgvector-versus-keyword improvement. |
+| Live retrieval evaluation | Partial | The frozen 34-case set is evaluated through the production router as 22 RAG evidence cases plus four safety cases. The current local tag-seeded semantic run reports Recall@3 20/22 (90.9%), unfiltered Recall@3 8/10 (80.0%), source correctness 20/22, section correctness 6/8, and safety 4/4. This is not an ICRN/H200 or answer-quality result. |
 
 ## Current Retrieval Flow
 
@@ -51,15 +53,16 @@ There are three different evidence levels:
 2. **Live execution:** real MiniLM ingestion must be run against the approved PostgreSQL corpus instead of the default mock embedding backend.
 3. **Measured quality:** a frozen advisor query set must be run and its per-query and aggregate results saved.
 
-The repository satisfies the first level. It does not yet contain enough immutable evidence for the third level, so claims such as “92% relevance” are not supported today.
+The repository now satisfies the first two levels and has a reproducible local
+retrieval report. It still does not support claims such as “92% answer
+relevance”: the report measures retrieved evidence, not generated answer
+quality, and the corpus is not an ICRN/H200 validation run.
 
 ## Next Validation Gate
 
-- Expand and freeze 30–50 advisor-style retrieval cases before looking at results.
-- Run real ingestion with `sentence-transformers/all-MiniLM-L6-v2` and verify every stored vector has dimension 384.
-- Evaluate Recall@1, Recall@k, section-type correctness, citation correctness, and low-confidence fallback correctness separately.
-- Run the same cases against semantic retrieval and keyword fallback.
-- Save raw per-query results, corpus/model versions, command, git SHA, and aggregates in a timestamped artifact directory.
+- Expand the frozen set only through a new versioned case file if broader topic coverage is needed.
+- Calibrate topic coverage and any reranker against the current 367-course corpus without weakening the scope guard.
+- Repeat the real MiniLM ingestion/evaluation on ICRN before using the result as a deployment benchmark.
 
 Reranking remains Planned. It should be considered only after the basic evaluation identifies a top-k precision problem worth its additional latency and complexity.
 

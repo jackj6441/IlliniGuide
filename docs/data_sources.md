@@ -167,9 +167,10 @@ cd backend
 ```
 
 On 2026-07-13, this added or updated official details for 367 distinct
-ECE/CS courses. Real MiniLM ingestion then produced 1,045 chunks with only one
-course skipped; semantic unfiltered Recall@3 improved from 8/22 (36.4%) to
-9/22 (40.9%). See `docs/benchmark_report.md` for the full comparison.
+ECE/CS courses. The current real MiniLM ingestion produced 1,057 chunks with
+only one course skipped; the increase includes the career-direction metadata
+seeded for the selected core courses. See `docs/benchmark_report.md` for the
+full comparison and artifact paths.
 
 ## Manual Career Tags
 
@@ -188,6 +189,7 @@ computer_architecture
 data_science
 robotics_cv
 security
+gpu_programming
 ```
 
 Run:
@@ -205,13 +207,16 @@ cd backend
 .venv/bin/python -m scripts.seed_career_tags
 ```
 
-Current local development result after expanding ECE ingestion to 80 rows:
+Current local development result after expanding ECE/CS ingestion and seeding
+the selected core courses:
 
 ```text
-Seeded career tags for 11/12 configured courses. Missing courses: ECE 419.
+Seeded career tags for 12/12 configured courses. Missing courses: none.
 ```
 
-This enables `recommend_courses("ai_infra")` to return tagged courses such as `ECE 408` and `ECE 411` in the local development database.
+This enables `recommend_courses("ai_infra")` to return tagged courses such as
+`ECE 408` and `ECE 411`, and lets retrieval recognize the manually curated
+`gpu_programming`/CUDA topic for `ECE 408` in the local development database.
 
 Rules:
 

@@ -1,7 +1,8 @@
 # Retrieval Evaluation Plan
 
-**Status: Partial — harness implemented and a local Docker/PostgreSQL baseline
-has been recorded; result improvement is pending.**
+**Status: Partial — harness implemented and current local Docker/PostgreSQL
+results are recorded; ICRN validation and answer-quality evaluation remain
+pending.**
 
 This plan evaluates whether the retriever returned appropriate catalog evidence
 before any LLM answer is generated. It does not measure advice quality,

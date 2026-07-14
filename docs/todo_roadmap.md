@@ -1,6 +1,6 @@
 # IlliniGuide Serve — Truthful Delivery Roadmap
 
-**Last reviewed:** 2026-07-13
+**Last reviewed:** 2026-07-14
 
 **Project status:** a demonstrable AI-serving prototype; not yet a fully observable, evaluated, or deployable production system.
 
@@ -19,17 +19,17 @@ This roadmap is deliberately evidence-first. A feature can be implemented in cod
 
 | Area | Status | Verified baseline / boundary |
 |---|---|---|
-| Backend layering and structured tools | Implemented | FastAPI route -> router -> dispatcher -> tools -> answer synthesis; backend suite previously passed 223 tests. |
+| Backend layering and structured tools | Implemented | FastAPI route -> router -> dispatcher -> tools -> answer synthesis; backend suite passes 264 tests. |
 | PostgreSQL schema | Implemented | `courses`, `gpa_stats`, `course_chunks`, evaluation tables, and pgvector initialization exist. |
-| Course data | Partial | Official listing plus catalog-detail ingestion produced 367 ECE/CS courses in local Docker/PostgreSQL; GPA coverage and career tags remain incomplete. |
-| Semantic RAG code | Partial | A real MiniLM run embedded 1,045 chunks from 367 courses; the scope guard now gives 100% unsupported-case safety, while production-router-aligned open-discovery Recall@3 remains 2/10 (20.0%). |
+| Course data | Partial | Official listing plus catalog-detail ingestion produced 367 ECE/CS courses in local Docker/PostgreSQL; GPA coverage is still bounded and career tags cover 12 selected core courses. |
+| Semantic RAG code | Partial | A real MiniLM run embedded 1,057 chunks from 367 courses; current production-router-aligned semantic Recall@3 is 20/22 (90.9%), unfiltered discovery Recall@3 is 8/10 (80.0%), and unsupported safety is 4/4. |
 | LLM serving | Implemented | Self-hosted **Qwen2.5-7B-Instruct** on one ICRN H200 through vLLM, `float16`, 8K context, prefix caching. |
 | Streaming UI | Implemented | Backend SSE and frontend incremental rendering/cancellation exist; the frontend production build has passed. |
 | Load benchmark | Partial | A 10-concurrency run recorded streaming p50 TTFT 55 ms and blocking p50 472 ms. Saved results do not yet establish tokens/sec, error rate, or GPU compute utilization. |
 | Observability | Partial | Per-tool debug trace and a vLLM `/metrics` snapshot script exist; no Prometheus scrape, Grafana dashboard, or application metrics endpoint is verified. |
 | Docker | Partial | Dockerfiles are uncommitted WIP and lack a clean-environment compose smoke test. |
 | Kubernetes | Planned | `infra/k8s/` has no manifests or recovery evidence. |
-| Evaluation | Partial | A frozen 34-case evaluation ran against local Docker/PostgreSQL. The production router evaluates 22 RAG evidence cases (eight prerequisite cases use structured tools); semantic open-discovery Recall@3 is 2/10 (20.0%) and unsupported safety is 4/4. See `docs/benchmark_report.md`. |
+| Evaluation | Partial | The frozen 34-case evaluation runs against local Docker/PostgreSQL; the production router evaluates 22 RAG evidence cases plus four safety cases. Current semantic Recall@3 is 20/22 (90.9%), unfiltered discovery is 8/10 (80.0%), and unsupported safety is 4/4. See `docs/benchmark_report.md`. |
 
 ## Resume claim gates
 
@@ -39,7 +39,7 @@ These are targets, not current accomplishments.
 |---|---|---|
 | “served Qwen3-32B (BF16)” | The verified serving model is Qwen2.5-7B-Instruct FP16. | Exact launch configuration, `/v1/models` output, smoke test, model-specific benchmark JSON/CSV, and a commit/docs update. |
 | “10+ concurrent requests” | Exactly 10 concurrent requests have been benchmarked. | At least one saved, reproducible run at the claimed concurrency; report the exact value, not `+` unless several higher levels pass. |
-| “indexes 150+ department courses” | About 80 ECE course records are evidenced. | Source inventory, ingestion report showing >=150 deduplicated records, and persisted chunks/embeddings counts. |
+| “indexes 150+ department courses” | A local source-tagged snapshot contains 367 distinct ECE/CS course records and 1,057 persisted MiniLM chunks. | Keep the source inventory and embedding manifest with the demo evidence, and state that this is a local catalog snapshot rather than an ICRN production corpus. |
 | “92% answer relevance” | No labeled evaluation or recorded result supports this number. | Frozen question set, relevance rubric, independent labels, evaluation script output, denominator, and a versioned report. |
 | “65–70% GPU utilization” | `--gpu-memory-utilization 0.85` is only a vLLM VRAM allocation cap, not GPU compute utilization. | Time-series sampling during a named load run, sampling method, aggregation window, raw CSV, and comparison baseline. |
 
