@@ -6,11 +6,13 @@
 ICRN/H200 benchmark.** The result measures retrieval evidence only, not answer
 quality or relevance.
 
-| Run | Corpus / embedding | Evidence Recall@3 | Unfiltered Recall@3 | Source correctness | Section correctness | Unsupported safety |
+| Run | Corpus / embedding | Evidence Recall@3 | Non-filtered Recall@3 | Source correctness | Section correctness | Unsupported safety |
 |---|---|---:|---:|---:|---:|---:|
 | Semantic pgvector, listing-only baseline | 360 source-tagged courses; 268 MiniLM 384-d chunks | 14/30 (46.7%) | 8/22 (36.4%) | 9/30 (30.0%) | 6/16 (37.5%) | 1/4 (25.0%) |
 | Semantic pgvector, enriched official catalog | 367 source-tagged courses; 1,045 MiniLM 384-d chunks | 17/30 (56.7%) | 9/22 (40.9%) | 13/30 (43.3%) | 7/16 (43.8%) | 1/4 (25.0%) |
 | Keyword chunk baseline, enriched official catalog | Same enriched corpus / frozen cases | 17/30 (56.7%) | 9/22 (40.9%) | 15/30 (50.0%) | 4/16 (25.0%) | 0/4 (0.0%) |
+| Semantic pgvector, router-aligned direct-ID policy | Same enriched corpus; 1,045 MiniLM 384-d chunks | 22/30 (73.3%) | 2/10 (20.0%) | 22/30 (73.3%) | 7/16 (43.8%) | 2/4 (50.0%) |
+| Keyword chunk baseline, router-aligned direct-ID policy | Same enriched corpus / frozen cases | 23/30 (76.7%) | 3/10 (30.0%) | 22/30 (73.3%) | 4/16 (25.0%) | 1/4 (25.0%) |
 
 The raw local artifacts are intentionally uncommitted but available in the
 working tree under `artifacts/retrieval_eval/20260713T084605Z-8b98e35/` and
@@ -18,9 +20,23 @@ working tree under `artifacts/retrieval_eval/20260713T084605Z-8b98e35/` and
 `retrieval_cases.v1`, top-k 3, and
 `sentence-transformers/all-MiniLM-L6-v2`. The enriched semantic and keyword
 artifacts are `20260713T094627Z-973add9` and `20260713T094651Z-973add9`.
+The router-aligned semantic and keyword artifacts are respectively
+`20260714T012930Z-45e9e35` and `20260714T012957Z-45e9e35`.
 
-These results **forbid** a “92% answer relevance” claim. The current failure
-pattern was improved by official-description enrichment: only 1 of 367 courses
-now produced no chunk, and semantic unfiltered Recall@3 rose 4.5 percentage
-points. The remaining problem is direct course-ID routing and explicit
-unsupported-query handling, followed by another frozen-case evaluation.
+The first three runs use the former policy, which filtered only eight
+``metadata_filtered`` cases; their non-filtered denominator is therefore 22.
+The router-aligned runs also filter direct course-ID lookups and the invented
+``ECE 999`` query, matching the actual chat tool path. Their non-filtered
+denominator is the ten open-discovery cases, so **40.9% and 20.0% are not
+directly comparable quality claims**. The direct-ID policy correctly retrieved
+the expected course on all 20 ID-filtered evidence cases, and returned no
+evidence for ``ECE 999``; it did not solve open-discovery quality or all
+out-of-scope questions.
+
+These results **forbid** a “92% answer relevance” claim. Official-description
+enrichment reduced empty courses from 92/360 to 1/367, then direct-ID routing
+made exact course lookup behavior defensible. The remaining problem is
+open-discovery retrieval and unsupported-query safety: semantic search is only
+2/10 on the unfiltered discovery subset and 2/4 on safety cases. The next
+improvement should add an explicit corpus-scope/abstention guard before another
+frozen-case evaluation.

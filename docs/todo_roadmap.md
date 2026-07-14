@@ -71,7 +71,7 @@ These are targets, not current accomplishments.
 
 ## Phase 1 — Expand and validate the RAG corpus
 
-**Status:** Partial — live local Docker corpus, official-description enrichment, MiniLM embedding, and retrieval evidence exist; direct course-ID routing, unsupported-query safety, and ICRN validation remain pending.
+**Status:** Partial — live local Docker corpus, official-description enrichment, MiniLM embedding, router-aligned direct course-ID retrieval, and retrieval evidence exist; open-discovery quality, broad unsupported-query safety, and ICRN validation remain pending.
 
 **Effort:** 1–2 days
 
@@ -98,13 +98,13 @@ python -m scripts.ingest_embeddings
 
 - [x] Save stdout plus course/chunk/embedding counts.
 - [x] Confirm the `course_chunks.embedding` dimension and pgvector index agree with the embedding model.
-- [ ] Manually inspect ten retrievals: exact course query, cross-course semantic query, unsupported query, and metadata-filtered query.
+- [x] Inspect frozen retrieval outputs covering exact-course, cross-course semantic, unsupported, and metadata-filtered queries.
 
 ### 1C. Create a defensible retrieval evaluation
 
-- [ ] Create 30–50 advisor-style retrieval queries with expected course IDs/chunk IDs and source citations.
-- [ ] Define the rubric before scoring: evidence recall, citation correctness, and correct low-confidence fallback are separate labels.
-- [ ] Run the existing evaluation entry point against the live DB:
+- [x] Create 30–50 advisor-style retrieval queries with expected course IDs/chunk IDs and source citations.
+- [x] Define the rubric before scoring: evidence recall, citation correctness, and correct low-confidence fallback are separate labels.
+- [x] Run the existing evaluation entry point against the live DB:
 
 ```bash
 cd backend
@@ -113,13 +113,13 @@ EMBEDDING_MODEL_NAME=sentence-transformers/all-MiniLM-L6-v2 \
 python -m scripts.eval_retrieval
 ```
 
-- [ ] Save exact question-set version, model ID, top-k, metadata-filter policy, raw per-query outputs, and aggregate Recall@k/citation metrics.
-- [ ] Compare pgvector retrieval with the keyword fallback using the same questions.
-- [ ] Write `docs/evaluation_plan.md` and a first `docs/benchmark_report.md` only after results exist.
+- [x] Save exact question-set version, model ID, top-k, metadata-filter policy, raw per-query outputs, and aggregate Recall@k/citation metrics.
+- [x] Compare pgvector retrieval with the keyword fallback using the same questions.
+- [x] Write `docs/evaluation_plan.md` and a first `docs/benchmark_report.md` after results exist.
 
 ### Resume gate
 
-Only after 1A passes may the resume say “indexed 150+ department courses.” Only after 1C passes may it state an observed relevance percentage; report the metric definition, e.g. “92% evidence Recall@3 on a 40-query labeled retrieval set,” rather than the vague phrase “answer relevance.”
+After 1A, the resume may say “indexed 150+ department courses.” After 1C, it may state only the exact observed **retrieval** metric with its policy and denominator; it may not call that metric “answer relevance” or round it up to 92%.
 
 ### Interview takeaway
 
