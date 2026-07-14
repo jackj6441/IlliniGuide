@@ -22,8 +22,8 @@ working tree under `artifacts/retrieval_eval/20260713T084605Z-8b98e35/` and
 artifacts are `20260713T094627Z-973add9` and `20260713T094651Z-973add9`.
 The production-router-aligned semantic and keyword artifacts before the scope
 guard are `20260714T013614Z-9b2f556` and `20260714T013641Z-9b2f556`. The current
-scope-guard runs are `20260714T020534Z-1092e30` and
-`20260714T020600Z-1092e30`.
+scope-guard runs are `20260714T020724Z-db49cad` and
+`20260714T020752Z-db49cad`.
 
 The first three runs use the former policy, which treats all 30 evidence labels
 as RAG cases and filters only eight ``metadata_filtered`` cases; their
