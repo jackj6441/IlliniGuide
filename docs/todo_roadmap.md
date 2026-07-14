@@ -22,14 +22,14 @@ This roadmap is deliberately evidence-first. A feature can be implemented in cod
 | Backend layering and structured tools | Implemented | FastAPI route -> router -> dispatcher -> tools -> answer synthesis; backend suite previously passed 223 tests. |
 | PostgreSQL schema | Implemented | `courses`, `gpa_stats`, `course_chunks`, evaluation tables, and pgvector initialization exist. |
 | Course data | Partial | Official listing plus catalog-detail ingestion produced 367 ECE/CS courses in local Docker/PostgreSQL; GPA coverage and career tags remain incomplete. |
-| Semantic RAG code | Partial | A real MiniLM run embedded 1,045 chunks from 367 courses; official-description enrichment improved unfiltered Recall@3 from 36.4% to 40.9%, still below quality targets. |
+| Semantic RAG code | Partial | A real MiniLM run embedded 1,045 chunks from 367 courses; description enrichment improved the former-policy non-filtered Recall@3 from 36.4% to 40.9%, while the current production-router-aligned open-discovery result is 2/10 (20.0%). |
 | LLM serving | Implemented | Self-hosted **Qwen2.5-7B-Instruct** on one ICRN H200 through vLLM, `float16`, 8K context, prefix caching. |
 | Streaming UI | Implemented | Backend SSE and frontend incremental rendering/cancellation exist; the frontend production build has passed. |
 | Load benchmark | Partial | A 10-concurrency run recorded streaming p50 TTFT 55 ms and blocking p50 472 ms. Saved results do not yet establish tokens/sec, error rate, or GPU compute utilization. |
 | Observability | Partial | Per-tool debug trace and a vLLM `/metrics` snapshot script exist; no Prometheus scrape, Grafana dashboard, or application metrics endpoint is verified. |
 | Docker | Partial | Dockerfiles are uncommitted WIP and lack a clean-environment compose smoke test. |
 | Kubernetes | Planned | `infra/k8s/` has no manifests or recovery evidence. |
-| Evaluation | Partial | A frozen 34-case evaluation ran against local Docker/PostgreSQL: enriched semantic unfiltered Recall@3 is 9/22 (40.9%); see `docs/benchmark_report.md`. |
+| Evaluation | Partial | A frozen 34-case evaluation ran against local Docker/PostgreSQL. The production router evaluates 22 RAG evidence cases (eight prerequisite cases use structured tools); semantic open-discovery Recall@3 is 2/10 (20.0%). See `docs/benchmark_report.md`. |
 
 ## Resume claim gates
 
