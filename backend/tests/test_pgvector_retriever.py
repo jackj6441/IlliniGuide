@@ -96,7 +96,7 @@ def test_similarity_clipped_to_unit_interval() -> None:
     client = MagicMock()
     client.embed.return_value = [[0.0] * 384]
 
-    out = semantic_search(session, "q", client, top_k=5)
+    out = semantic_search(session, "sample text", client, top_k=5)
 
     assert 0.0 <= out[0].score <= 1.0
     assert 0.0 <= out[1].score <= 1.0
@@ -151,12 +151,41 @@ def test_result_preserves_fields_from_chunk_row() -> None:
     session = _mock_session_returning([(row, 0.2)])
     client = MockEmbeddingClient()
 
-    out = semantic_search(session, "gpu programming", client, top_k=1)
+    out = semantic_search(session, "AI infrastructure", client, top_k=1)
 
     assert out[0].section_type == "career_direction"
     assert out[0].chunk_text == "Suitable for AI infrastructure roles."
     assert out[0].source_name == "UIUC Course Catalog"
     assert out[0].source_url.endswith("ECE408")
+
+
+def test_semantic_search_abstains_when_query_has_no_catalog_signal() -> None:
+    row = _make_chunk_row("ECE 468", "overview", "Optical sensors and remote sensing.")
+    session = _mock_session_returning([(row, 0.4)])
+
+    out = semantic_search(
+        session,
+        "Which ECE course teaches observational astronomy?",
+        MockEmbeddingClient(),
+        top_k=3,
+    )
+
+    assert out == []
+
+
+def test_explicit_course_filter_bypasses_scope_abstention() -> None:
+    row = _make_chunk_row("ECE 468", "overview", "Optical sensors and remote sensing.")
+    session = _mock_session_returning([(row, 0.4)])
+
+    out = semantic_search(
+        session,
+        "Which topic does this course cover?",
+        MockEmbeddingClient(),
+        course_ids=["ECE 468"],
+        top_k=3,
+    )
+
+    assert out[0].course_id == "ECE 468"
 
 
 def test_empty_result_set_returns_empty_list() -> None:

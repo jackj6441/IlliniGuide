@@ -10,6 +10,61 @@ from app.services.rag.sample_data import SAMPLE_CHUNKS, SampleChunk
 
 
 TOKEN_PATTERN = re.compile(r"[a-z0-9]+")
+SCOPE_QUERY_STOPWORDS = frozenset(
+    {
+        "a",
+        "about",
+        "an",
+        "and",
+        "are",
+        "before",
+        "best",
+        "between",
+        "can",
+        "class",
+        "classes",
+        "compare",
+        "course",
+        "courses",
+        "does",
+        "do",
+        "evidence",
+        "for",
+        "give",
+        "good",
+        "has",
+        "have",
+        "help",
+        "i",
+        "information",
+        "is",
+        "it",
+        "learn",
+        "list",
+        "me",
+        "need",
+        "of",
+        "prerequisite",
+        "prerequisites",
+        "prior",
+        "read",
+        "related",
+        "relevant",
+        "required",
+        "show",
+        "take",
+        "taking",
+        "tell",
+        "teaches",
+        "taught",
+        "the",
+        "to",
+        "what",
+        "which",
+        "would",
+    }
+)
+DEPARTMENT_TOKENS = frozenset({"cs", "cse", "ece"})
 
 
 @dataclass(frozen=True)
@@ -24,6 +79,24 @@ class RetrievedChunk:
 
 def tokenize(text: str) -> set[str]:
     return set(TOKEN_PATTERN.findall(text.lower()))
+
+
+def has_catalog_signal(query: str, chunks: list[RetrievedChunk]) -> bool:
+    """Return whether evidence shares a non-generic topic token with query.
+
+    Embedding similarity alone can map an out-of-scope question to generic
+    catalog text such as ``Prerequisites`` or ``Credit hours``. This small
+    lexical check is intentionally conservative and only gates queries that
+    lack an explicit course ID; it is not a replacement for semantic ranking.
+    """
+    query_tokens = tokenize(query) - SCOPE_QUERY_STOPWORDS - DEPARTMENT_TOKENS
+    if not query_tokens:
+        return False
+    return any(
+        query_tokens
+        & (tokenize(f"{chunk.course_id} {chunk.section_type} {chunk.chunk_text}") - DEPARTMENT_TOKENS)
+        for chunk in chunks
+    )
 
 
 def search_course_docs(
@@ -45,6 +118,8 @@ def search_course_docs(
             ranked.append(_to_retrieved_chunk(chunk, score))
 
     ranked.sort(key=lambda chunk: chunk.score, reverse=True)
+    if ranked and not query_course_ids and not has_catalog_signal(query, ranked):
+        return []
     return ranked[:top_k]
 
 
@@ -80,6 +155,8 @@ def search_course_docs_from_db(
 
     ranked.sort(key=lambda chunk: chunk.score, reverse=True)
     if ranked:
+        if not query_course_ids and not has_catalog_signal(query, ranked):
+            return []
         return ranked[:top_k]
     return search_course_docs(query, course_ids=course_ids, top_k=top_k)
 
@@ -127,6 +204,8 @@ def search_course_chunks_by_keyword(
             )
 
     ranked.sort(key=lambda chunk: chunk.score, reverse=True)
+    if ranked and not course_ids and not has_catalog_signal(query, ranked):
+        return []
     return ranked[:top_k]
 
 

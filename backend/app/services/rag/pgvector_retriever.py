@@ -13,7 +13,12 @@ from sqlalchemy.orm import Session
 
 from app.db.models import CourseChunk
 from app.services.rag.embeddings import EmbeddingClient
-from app.services.rag.retriever import RetrievedChunk, search_course_docs_from_db
+from app.services.rag.normalize import extract_course_ids
+from app.services.rag.retriever import (
+    RetrievedChunk,
+    has_catalog_signal,
+    search_course_docs_from_db,
+)
 
 
 LOW_CONFIDENCE_THRESHOLD = 0.35
@@ -51,7 +56,11 @@ def semantic_search(
 
     rows = session.execute(statement).all()
 
-    return [_row_to_chunk(chunk, dist) for chunk, dist in rows]
+    retrieved = [_row_to_chunk(chunk, dist) for chunk, dist in rows]
+    if retrieved and not (course_ids or extract_course_ids(query)):
+        if not has_catalog_signal(query, retrieved):
+            return []
+    return retrieved
 
 
 def _row_to_chunk(chunk: CourseChunk, distance: float) -> RetrievedChunk:

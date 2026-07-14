@@ -224,7 +224,7 @@ def test_semantic_hit_high_confidence_produces_no_confidence_note() -> None:
 def test_semantic_hit_low_confidence_appends_note() -> None:
     row = _make_chunk_row("ECE 391", "overview", "Systems programming.")
     session = FakeSession([], semantic_rows=[(row, 0.85)])  # similarity=0.15
-    request = SearchCourseDocsRequest(query="something obscure", top_k=3)
+    request = SearchCourseDocsRequest(query="systems programming", top_k=3)
 
     result = search_course_docs(
         session, request, embedding_client=MockEmbeddingClient()
@@ -234,6 +234,22 @@ def test_semantic_hit_low_confidence_appends_note() -> None:
     assert result.notes
     assert "confidence low" in result.notes[0].lower()
     assert "0.15" in result.notes[0]
+
+
+def test_scope_guard_returns_no_evidence_for_unrelated_query() -> None:
+    row = _make_chunk_row("ECE 468", "overview", "Optical sensors and remote sensing.")
+    session = FakeSession([], semantic_rows=[(row, 0.4)])
+
+    result = search_course_docs(
+        session,
+        SearchCourseDocsRequest(
+            query="Which ECE course teaches observational astronomy?", top_k=3
+        ),
+        embedding_client=MockEmbeddingClient(),
+    )
+
+    assert result.docs == []
+    assert result.notes == ["No evidence found in course database or sample chunks."]
 
 
 def test_semantic_empty_falls_back_to_keyword_silently() -> None:
