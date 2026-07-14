@@ -219,7 +219,13 @@ def test_explicit_keyword_and_semantic_adapters_are_stub_testable(
     assert keyword.applied_course_ids == ("ECE 391",)
 
 
-def test_metadata_filter_is_only_applied_to_metadata_filtered_cases() -> None:
+def test_course_id_filter_matches_course_qa_and_unsupported_query_paths() -> None:
+    direct_lookup = EvalCase(
+        case_id="direct",
+        category="direct_lookup",
+        query="What is ECE 391?",
+        expected_course_ids=("ECE 391",),
+    )
     filtered = EvalCase(
         case_id="filtered",
         category="metadata_filtered",
@@ -232,13 +238,28 @@ def test_metadata_filter_is_only_applied_to_metadata_filtered_cases() -> None:
         query="Compare ECE 391 and ECE 408",
         expected_course_ids=("ECE 391", "ECE 408"),
     )
+    invented = EvalCase(
+        case_id="invented",
+        category="unsupported",
+        query="Tell me about ECE 999",
+        expected_course_ids=(),
+        expected_safety="no_evidence",
+    )
 
+    assert course_filter_for_case(direct_lookup) == ["ECE 391"]
     assert course_filter_for_case(filtered) == ["ECE 391"]
     assert course_filter_for_case(discovery) is None
+    assert course_filter_for_case(invented) == ["ECE 999"]
 
 
-def test_metadata_filtered_cases_are_excluded_from_unfiltered_recall() -> None:
+def test_course_id_filtered_cases_are_excluded_from_unfiltered_recall() -> None:
     cases = [
+        EvalCase(
+            case_id="direct",
+            category="direct_lookup",
+            query="What is ECE 391?",
+            expected_course_ids=("ECE 391",),
+        ),
         EvalCase(
             case_id="filtered",
             category="metadata_filtered",
@@ -258,13 +279,14 @@ def test_metadata_filtered_cases_are_excluded_from_unfiltered_recall() -> None:
         cases,
         retriever=_adapter(
             {
+                "What is ECE 391?": [_chunk("ECE 391")],
                 "ECE 391 prerequisites": [_chunk("ECE 391")],
                 "systems programming": [_chunk("ECE 408")],
             }
         ),
     )
 
-    assert report.topk_hit_rate == 0.5
+    assert report.topk_hit_rate == 2 / 3
     assert report.unfiltered_evidence_expected == 1
     assert report.unfiltered_topk_hit_rate == 0.0
 

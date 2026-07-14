@@ -4,7 +4,7 @@ from app.services.rag.embeddings import (
     EmbeddingClient,
     get_default_embedding_client,
 )
-from app.services.rag.normalize import normalize_course_id
+from app.services.rag.normalize import extract_course_ids, normalize_course_id
 from app.services.rag.pgvector_retriever import hybrid_search
 from app.services.rag.retriever import RetrievedChunk
 from app.services.tools.schemas import (
@@ -43,21 +43,26 @@ def search_course_docs(
                 seen.add(normalized)
                 normalized_course_ids.append(normalized)
 
+    # The router normally supplies IDs explicitly. Extracting them here keeps
+    # the public tool safe for direct callers as well: a query for ECE 999
+    # must not silently retrieve evidence for a different course.
+    effective_course_ids = normalized_course_ids or extract_course_ids(query)
+
     client = embedding_client or get_default_embedding_client()
     chunks, retrieval_notes = hybrid_search(
         session,
         query,
         client,
-        course_ids=normalized_course_ids or None,
+        course_ids=effective_course_ids or None,
         top_k=request.top_k,
     )
 
     docs = [_chunk_to_doc(chunk) for chunk in chunks]
-    notes = retrieval_notes + _build_notes(chunks)
+    notes = retrieval_notes + _build_notes(chunks, effective_course_ids)
 
     return SearchCourseDocsResult(
         query=query,
-        course_ids=normalized_course_ids,
+        course_ids=effective_course_ids,
         docs=docs,
         notes=notes,
     )
@@ -74,8 +79,13 @@ def _chunk_to_doc(chunk: RetrievedChunk) -> RetrievedDoc:
     )
 
 
-def _build_notes(chunks: list[RetrievedChunk]) -> list[str]:
+def _build_notes(chunks: list[RetrievedChunk], course_ids: list[str]) -> list[str]:
     if not chunks:
+        if course_ids:
+            return [
+                f"No evidence found for requested course ID(s): {', '.join(course_ids)}. "
+                "The course may be outside the current catalog coverage."
+            ]
         return ["No evidence found in course database or sample chunks."]
     if all(chunk.source_name == SAMPLE_FALLBACK_SOURCE_NAME for chunk in chunks):
         return [

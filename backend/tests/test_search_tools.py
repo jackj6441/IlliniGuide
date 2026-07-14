@@ -82,6 +82,32 @@ def test_normalizes_and_deduplicates_course_ids() -> None:
     assert result.course_ids == ["ECE 408"]
 
 
+def test_direct_course_id_in_query_becomes_metadata_filter() -> None:
+    session = FakeSession([_make_course()])
+
+    result = search_course_docs(
+        session,
+        SearchCourseDocsRequest(query="What does ECE 408 cover?"),
+    )
+
+    assert result.course_ids == ["ECE 408"]
+
+
+def test_unknown_direct_course_id_returns_scoped_no_evidence_note() -> None:
+    session = FakeSession([])
+
+    result = search_course_docs(
+        session,
+        SearchCourseDocsRequest(query="Tell me about ECE 999 Quantum Advising."),
+    )
+
+    assert result.docs == []
+    assert result.notes == [
+        "No evidence found for requested course ID(s): ECE 999. "
+        "The course may be outside the current catalog coverage.",
+    ]
+
+
 def test_empty_query_raises() -> None:
     session = FakeSession([])
     with pytest.raises(ValueError, match="non-empty"):

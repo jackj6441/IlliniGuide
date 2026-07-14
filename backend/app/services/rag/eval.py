@@ -243,13 +243,15 @@ def build_retriever(
 
 
 def course_filter_for_case(case: EvalCase) -> list[str] | None:
-    """Derive the course-ID metadata filter for explicitly labelled cases.
+    """Mirror the chat router's course-ID metadata filter in retrieval eval.
 
-    Only ``metadata_filtered`` cases activate this policy. This avoids silently
-    narrowing paraphrase and cross-course discovery questions just because a
-    course-looking token appears in their wording.
+    Course QA and prerequisite cases pass explicitly mentioned course IDs to
+    ``search_course_docs``. An unsupported query with an invented course ID
+    follows the same path and must receive no unrelated catalog evidence.
+    Paraphrase and cross-course discovery cases remain unfiltered, because
+    their intended behavior is semantic discovery rather than direct lookup.
     """
-    if case.category != "metadata_filtered":
+    if case.category not in {"direct_lookup", "metadata_filtered", "unsupported"}:
         return None
     return extract_course_ids(case.query) or None
 
@@ -299,7 +301,7 @@ def evaluate(
             topk_hit = any(chunk.course_id in case.expected_course_ids for chunk in chunks)
             top1_hits += int(top1_hit)
             topk_hits += int(topk_hit)
-            if case.category != "metadata_filtered":
+            if not course_filter_for_case(case):
                 unfiltered_evidence_expected += 1
                 unfiltered_top1_hits += int(top1_hit)
                 unfiltered_topk_hits += int(topk_hit)
